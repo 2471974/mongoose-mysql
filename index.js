@@ -1,3 +1,5 @@
 'use strict';
 
-module.exports = require('./lib/');
+const mongoose = require('./lib/');
+
+module.exports = mongoose.default;
