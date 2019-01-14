@@ -14,5 +14,4 @@ kitty.save(function (err) {
   }
 });
 
-
 console.log('Bye Bye!');
