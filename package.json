@@ -1,7 +1,7 @@
 {
   "name": "mongoose-mysql",
   "version": "1.0.0",
-  "description": "Mongoose for MySQL used for replace of MongoDB",
+  "description": "Mongoose npm package used for replace of MongoDB with MySQL",
   "main": "index.js",
   "scripts": {
     "watch": "babel -d lib/ src/ --watch",
