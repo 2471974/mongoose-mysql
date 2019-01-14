@@ -1,7 +1,9 @@
+import SchemaUtil from './util/schema'
+
 class Schema {
 
   constructor (fields, options) {
-    this.fields = fields
+    this.fields = SchemaUtil.optimize(fields)
     this.options = options || {}
   }
 
@@ -15,7 +17,11 @@ Schema.Types = class {
   constructor () {}
 }
 
-Schema.Types.ObjectId = class {
+Schema.Types.ObjectId = class { // 替换主键类型
+  constructor () {}
+}
+
+Schema.Types.Stringify = class { // JSON字符串
   constructor () {}
 }
 
