@@ -8,7 +8,6 @@ class Dao {
     this._schema = schema instanceof Schema ? schema : new Schema(schema, {
       collection: name
     })
-    console.log(this._name)
   }
 
   name () {
