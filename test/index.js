@@ -24,10 +24,12 @@ var CatSchema = new mongoose.Schema({
 
 var Cat = mongoose.model('Cat', CatSchema);
 
-var kitty = new Cat({ name: 'Zildjian' });
+var kitty = new Cat({ f1: 'Zildjian' });
 
 console.log(kitty.schema.fields)
 console.log(kitty.ddl(true).join('\n'))
+
+console.log(kitty)
 
 kitty.save(function (err) {
   if (err) {

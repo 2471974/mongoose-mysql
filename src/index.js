@@ -20,8 +20,9 @@ class Mongoose {
 
   model (name, schema) {
     return class extends Dao {
-      constructor () {
+      constructor (data) {
         super(name, schema)
+        Object.assign(this, data)
       }
     }
   }
