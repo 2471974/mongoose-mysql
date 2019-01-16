@@ -13,13 +13,6 @@ class Schema {
 
 }
 
-Schema.Splitter = class {
-  constructor () {}
-}
-
-Schema.Splitter.Table = '-'
-Schema.Splitter.Index = '.'
-
 Schema.Types = class {
   constructor () {}
 }

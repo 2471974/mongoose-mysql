@@ -1,5 +1,13 @@
-export default {
 
+export default {
+  glueTable: '-',
+  glueIndex: '.',
+  table() {
+    return Array.prototype.join.call(arguments, this.glueTable)
+  },
+  index() {
+    return Array.prototype.join.call(arguments, this.glueIndex)
+  },
   /**
    * 优化Schema配置，转成固定type的形式
    */
@@ -32,7 +40,9 @@ export default {
    */
   isField (fields) {
     let size = 0
-    const keywords = ['type', 'unique', 'required', 'ref', 'id', '_id', 'default', 'set', 'enum']
+    const keywords = [
+      'type', 'unique', 'required', 'ref', 'id', '_id', 'default', 'set', 'enum', 'formatter'
+    ]
     for (let field in fields) {
       if (keywords.indexOf(field) !== -1) size++
     }
@@ -47,6 +57,7 @@ export default {
    *  autoIndex - 存储记录在文档中的位置，如'0','f1','f1.0','f1.0.fx','f1.0.fx.0'
    */
   ddl (tableName, fields, withDrop, withAuto) {
+    tableName = this.table(tableName)
     let result = []
     if (fields instanceof Array) {
       if (fields.length < 1) throw 'schema has empty array field'
@@ -70,7 +81,7 @@ export default {
       switch (dataType) {
         case '[object Array]':
         case '[object Object]':
-          result.push(...this.ddl(tableName, value.type, withDrop, true))
+          result.push(...this.ddl(this.table(tableName, field), value.type, withDrop, true))
           break;
         default:
           if (value.type === String) {
@@ -84,7 +95,9 @@ export default {
           }
       }
     }
-    if (!withAuto) {
+    if (withAuto) {
+      sql.push("PRIMARY KEY (`autoId`, `autoIndex`)")
+    } else {
       sql.push("PRIMARY KEY (`_id`)")
     }
     sql.push(');')
