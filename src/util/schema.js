@@ -11,28 +11,21 @@ export default {
   /**
    * 优化Schema配置，转成固定type的形式
    */
-  optimize (fields) {
-    if (fields instanceof Array) return fields.map((item) => this.optimize(item))
-    // TODO: 单数据类型数组的情况
-    for (let field in fields) {
-      let value = fields[field]
-      switch (Object.prototype.toString.call(value)) {
-        case '[object Array]':
-          value = {type: this.optimize(value)}
-          break;
-        case '[object Object]':
-          if (this.isField(value)) {
-            value = Object.assign({}, value)
-          } else {
-            value = {type: this.optimize(value)}
-          }
-          break;
-        default:
-          value = {type: value}
-      }
-      fields[field] = value
+  optimize (fields, ignoreType) {
+    if (fields instanceof Array) { // 对象数组
+      fields = fields.map((item) => this.optimize(item))
+      return ignoreType ? fields : {type: fields}
     }
-    return fields
+    if (Object.prototype.toString.call(fields) !== '[object Object]') { // 单数据类型
+      return ignoreType ? fields : {type: fields}
+    }
+    if (this.isField(fields)) { // 类型对象
+      return Object.assign({}, fields, {type: this.optimize(fields.type, true)})
+    }
+    for (let field in fields) {
+      fields[field] = this.optimize(fields[field])
+    }
+    return ignoreType ?  fields : {type: fields}
   },
 
   /**
