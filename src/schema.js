@@ -13,6 +13,13 @@ class Schema {
 
 }
 
+Schema.Splitter = class {
+  constructor () {}
+}
+
+Schema.Splitter.Table = '-'
+Schema.Splitter.Index = '.'
+
 Schema.Types = class {
   constructor () {}
 }
@@ -21,7 +28,11 @@ Schema.Types.ObjectId = class { // 替换主键类型
   constructor () {}
 }
 
-Schema.Types.Stringify = class { // JSON字符串
+Schema.Formatters = class {
+  constructor () {}
+}
+
+Schema.Formatters.Stringify = class { // JSON字符串
   constructor () {}
 }
 

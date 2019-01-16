@@ -13,7 +13,7 @@ export default {
           value = {type: this.optimize(value)}
           break;
         case '[object Object]':
-          if (isField(value)) {
+          if (this.isField(value)) {
             value = Object.assign({}, value)
           } else {
             value = {type: this.optimize(value)}
@@ -54,7 +54,7 @@ export default {
       fields = fields[0]
     }
     if (withDrop) {
-      result.push("drop table if exists `' + tableName + '`;")
+      result.push("drop table if exists `" + tableName + "`;")
     }
     let sql = []
     sql.push("create table `" + tableName + "` (")

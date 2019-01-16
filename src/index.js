@@ -4,7 +4,10 @@ import Dao from './dao'
 
 class Mongoose {
 
-  constructor () {}
+  constructor () {
+    this.Schema = Schema
+    this.Promise = Promise
+  }
 
   // connect (uri, opts) {
   //   throw 'TODO: convert uri to mysql'
@@ -24,8 +27,5 @@ class Mongoose {
   }
 
 }
-
-Mongoose.Schema = Schema
-Mongoose.Promise = Promise
 
 export default new Mongoose()
