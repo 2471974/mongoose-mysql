@@ -9,6 +9,11 @@ export default {
   index() {
     return Array.prototype.join.call(arguments, this.glueIndex)
   },
+  formate (fields, data) {},
+  validate (fields, data) {},
+  insert (fields, data) {},
+  update (fields, data) {},
+  delete (fields, data) {},
   optimizeType (fields) {
     let dataType = Object.prototype.toString.call(fields)
     switch (dataType) {
