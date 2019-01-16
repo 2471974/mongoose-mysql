@@ -1,3 +1,4 @@
+import Schema from "../schema";
 
 export default {
   glueTable: '-',
@@ -68,7 +69,7 @@ export default {
     if (fields instanceof Array) {
       if (fields.length < 1) throw 'schema has empty array field'
       if (fields.length > 1) throw 'schema has array field, but length greater than 1'
-      fields = fields[0]
+      fields = fields[0].type
     }
     if (withDrop) {
       result.push("drop table if exists `" + tableName + "`;")
@@ -81,13 +82,22 @@ export default {
     } else {
       sql.push("`_id` int(11) NOT NULL AUTO_INCREMENT,")
     }
+    if (Object.prototype.toString.call(fields) !== '[object Object]') {
+      fields = {
+        value: {type: fields}
+      }
+    }
     for (let field in fields) {
       let value = fields[field]
       let dataType = Object.prototype.toString.call(value.type)
       switch (dataType) {
         case '[object Array]':
         case '[object Object]':
-          result.push(...this.ddl(this.table(tableName, field), value.type, withDrop, true))
+          if (typeof value.formatter !== 'undefined' && value.formatter instanceof Schema.Formatter.Stringify) {
+            sql.push("`" + field + "` text NULL,")
+          } else {
+            result.push(...this.ddl(this.table(tableName, field), value.type, withDrop, true))
+          }
           break;
         default:
           if (value.type === String) {
@@ -95,9 +105,9 @@ export default {
           } else if (value.type === Number) {
             sql.push("`" + field + "` double NOT NULL DEFAULT 0,")
           } else if (value.type === Date) {
-            sql.push("`" + field + "` datetime NOT NULL DEFAULT '',")
+            sql.push("`" + field + "` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,")
           } else {
-            throw 'schema has not supported field [' + field + '] with type [' + dataType + ']'
+            throw 'schema has not supported field [' + field + '] with type [' + dataType + '] in ' + JSON.stringify(fields)
           }
       }
     }

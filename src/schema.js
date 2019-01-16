@@ -21,11 +21,11 @@ Schema.Types.ObjectId = class { // 替换主键类型
   constructor () {}
 }
 
-Schema.Formatters = class {
+Schema.Formatter = class {
   constructor () {}
 }
 
-Schema.Formatters.Stringify = class { // JSON字符串
+Schema.Formatter.Stringify = class { // JSON字符串
   constructor () {}
 }
 
