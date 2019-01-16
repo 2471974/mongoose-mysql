@@ -8,38 +8,41 @@ export default {
   index() {
     return Array.prototype.join.call(arguments, this.glueIndex)
   },
-  /**
-   * 优化Schema配置，转成固定type的形式
-   */
-  optimize (fields, ignoreType) {
-    if (fields instanceof Array) { // 对象数组
-      fields = fields.map((item) => this.optimize(item))
-      return ignoreType ? fields : {type: fields}
+  optimizeType (fields) {
+    let dataType = Object.prototype.toString.call(fields)
+    switch (dataType) {
+      case '[object Array]':
+        return {type: this.optimizeArray(fields)}
+      case '[object Object]':
+        if (this.isTypeObject(fields)) {
+          fields.type = this.optimizeType(fields.type).type
+          return fields
+        }
+        return {type: this.optimizeObject(fields)}
+      default:
+        return {type: fields}
     }
-    if (Object.prototype.toString.call(fields) !== '[object Object]') { // 单数据类型
-      return ignoreType ? fields : {type: fields}
-    }
-    if (this.isField(fields)) { // 类型对象
-      return Object.assign({}, fields, {type: this.optimize(fields.type, true)})
-    }
-    for (let field in fields) {
-      fields[field] = this.optimize(fields[field])
-    }
-    return ignoreType ?  fields : {type: fields}
   },
-
+  optimizeObject (fields) {
+    for (let field in fields) {
+      fields[field] = this.optimizeType(fields[field])
+    }
+    return fields
+  },
+  optimizeArray (fields) {
+    return fields.map(item => this.optimizeType(item))
+  },
   /**
    * 判断Schema声明是否为字段配置
    */
-  isField (fields) {
-    let size = 0
+  isTypeObject (fields) {
     const keywords = [
       'type', 'unique', 'required', 'ref', 'id', '_id', 'default', 'set', 'enum', 'formatter'
     ]
     for (let field in fields) {
-      if (keywords.indexOf(field) !== -1) size++
+      if (keywords.indexOf(field) === -1) return false
     }
-    return size > 0
+    return true
   },
 
   /**

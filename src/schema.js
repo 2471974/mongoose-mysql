@@ -3,7 +3,7 @@ import SchemaUtil from './util/schema'
 class Schema {
 
   constructor (fields, options) {
-    this.fields = SchemaUtil.optimize(fields, true)
+    this.fields = SchemaUtil.optimizeObject(fields)
     this.options = options || {}
   }
 
