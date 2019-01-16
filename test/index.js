@@ -28,7 +28,6 @@ var kitty = new Cat({ f1: 'Zildjian' });
 
 // console.log(kitty.schema().fields)
 // console.log(kitty.ddl(true).join('\n'))
-
 // console.log(kitty)
 
 kitty.save(function (err) {

@@ -9,7 +9,9 @@ export default {
   index() {
     return Array.prototype.join.call(arguments, this.glueIndex)
   },
-  formate (fields, data) {},
+  formate (fields, data) {
+    
+  },
   validate (fields, data) {},
   insert (fields, data) {},
   update (fields, data) {},

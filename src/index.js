@@ -1,6 +1,6 @@
 import mysql from 'mysql'
 import Schema from './schema'
-import Dao from './dao'
+import Model from './model'
 
 class Mongoose {
 
@@ -19,7 +19,7 @@ class Mongoose {
   }
 
   model (name, schema) {
-    return class extends Dao {
+    return class extends Model {
       constructor (data) {
         super(name, schema)
         Object.assign(this, data)

@@ -1,7 +1,7 @@
 import Schema from "./schema";
 import SchemaUtil from './util/schema'
 
-class Dao {
+class Model {
 
   constructor (name, schema) {
     this._name = name
@@ -28,4 +28,4 @@ class Dao {
 
 }
 
-export default Dao
+export default Model
