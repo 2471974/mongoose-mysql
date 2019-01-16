@@ -18,7 +18,16 @@ export default {
           fields.type = this.optimizeType(fields.type).type
           return fields
         }
-        return {type: this.optimizeObject(fields)}
+        fields = {type: this.optimizeObject(fields)}
+        if (typeof fields.type.id !== 'undefined') {
+          fields.type._id = fields.type.id
+          delete fields.type.id
+        }
+        if (typeof fields.type._id !== 'undefined') {
+          fields._id = fields.type._id.type
+          delete fields.type._id
+        }
+        return fields
       default:
         return {type: fields}
     }
@@ -27,6 +36,7 @@ export default {
     for (let field in fields) {
       fields[field] = this.optimizeType(fields[field])
     }
+    
     return fields
   },
   optimizeArray (fields) {
