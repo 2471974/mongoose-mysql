@@ -29,8 +29,18 @@ class Model {
 
   findById (id, callback) {
     let queries = SchemaUtil.document(this.column(), this.table())
-    console.log(queries)
-    callback(null, id)
+    return mongoose.Promise.all(queries.map(query => {
+      return mongoose.connection.query(query.sql, [id])
+    })).then(results => {
+      results.forEach((result, index) => {
+        queries[index].result = result
+      })
+      callback || callback(null, queries)
+      return mongoose.Promise.resolve(queries)
+    }).catch(error => {
+      callback || callback(error)
+      return mongoose.Promise.reject(error)
+    })
   }
 
   save (callback) {

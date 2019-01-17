@@ -54,11 +54,11 @@ export default {
     let sql = []
     sql.push("select ")
     sql.push(columns.map(item => '`' + item + '`').join(','))
-    sql.push(' from ', tableName, ' where ')
+    sql.push(" from `", tableName, "` where ")
     if (keyIndex.length > 0) {
-      sql.push('autoId = ? order by autoIndex asc')
+      sql.push("autoId = ? order by autoIndex asc")
     } else {
-      sql.push('_id = ?')
+      sql.push("_id = ?")
     }
     result.unshift({sql: sql.join(''), tableName, keyIndex, isArray})
     return result
@@ -107,11 +107,9 @@ export default {
       }
     }
     let sql = []
-    sql.push("insert into `" + tableName + "` (")
+    sql.push("insert into `", tableName, "` (")
     sql.push(columns.map(item => '`' + item + '`').join(','))
-    sql.push(') values (')
-    sql.push(columns.fill('?').join(','))
-    sql.push(')')
+    sql.push(") values (", columns.fill('?').join(','), ")")
     result.unshift({sql: sql.join(''), data: values})
     return result
   },
@@ -178,10 +176,10 @@ export default {
     let result = []
     fields = this.fieldsArrayType(fields)
     if (withDrop) {
-      result.push("drop table if exists `" + tableName + "`;")
+      result.push("drop table if exists `", tableName, "`;")
     }
     let sql = []
-    sql.push("create table `" + tableName + "` (")
+    sql.push("create table `", tableName, "` (")
     if (withAuto) {
       sql.push("`autoId` int(11) NOT NULL DEFAULT '0',")
       sql.push("`autoIndex` varchar(255) NOT NULL DEFAULT '',")
@@ -200,18 +198,18 @@ export default {
         case '[object Array]':
         case '[object Object]':
           if (typeof value.formatter !== 'undefined' && value.formatter instanceof Schema.Formatter.Stringify) {
-            sql.push("`" + field + "` text NULL,")
+            sql.push("`", field, "` text NULL,")
           } else {
             result.push(...this.ddl(this.table(tableName, field), value.type, withDrop, true))
           }
           break;
         default:
           if (value.type === String) {
-            sql.push("`" + field + "` varchar(255) NOT NULL DEFAULT '',")
+            sql.push("`", field, "` varchar(255) NOT NULL DEFAULT '',")
           } else if (value.type === Number) {
-            sql.push("`" + field + "` double NOT NULL DEFAULT 0,")
+            sql.push("`", field, "` double NOT NULL DEFAULT 0,")
           } else if (value.type === Date) {
-            sql.push("`" + field + "` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,")
+            sql.push("`", field, "` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,")
           } else {
             throw 'schema has not supported field [' + field + '] with type [' + dataType + '] in ' + JSON.stringify(fields)
           }
@@ -222,7 +220,7 @@ export default {
     } else {
       sql.push("PRIMARY KEY (`_id`)")
     }
-    sql.push(');')
+    sql.push(");")
     result.push(sql.join(''))
     return result
   }
