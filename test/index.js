@@ -19,7 +19,24 @@ var CatSchema = new mongoose.Schema({
 	f8: {
 		id: false,
 		f8c1: String
-	}
+	},
+	f9: {
+		f9d: {
+			f9d1: String
+		}
+	},
+	f10: {
+		f10c1: String,
+		f10d: {
+			f10d1: String
+		}
+	},
+	f11: [{
+		f11c1: String,
+		f11d: {
+			f11d1: String
+		}
+	}]
 }, {collection: 'cat'})
 
 var Cat = mongoose.model('Cat', CatSchema);
@@ -40,7 +57,24 @@ var kitty = new Cat({
 	f7: ['f7-1', 'f7-2'],
 	f8: {
 		f8c1: 'f8c1'
-	}
+	},
+	f9: {
+		f9d: {
+			f9d1: 'f9d1-String'
+		}
+	},
+	f10: {
+		f10c1: 'f10c1-String',
+		f10d: {
+			f10d1: 'f10d1-String'
+		}
+	},
+	f11: [{
+		f11c1: 'f11c1-String',
+		f11d: {
+			f11d1: 'f11d1-sss'
+		}
+	}]
 });
 
 // console.log(kitty.schema().fields)

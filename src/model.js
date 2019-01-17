@@ -28,12 +28,13 @@ class Model {
   }
 
   findById (id, callback) {
+    let queries = SchemaUtil.document(this.column(), this.table())
+    console.log(queries)
     callback(null, id)
   }
 
   save (callback) {
     let queries = SchemaUtil.insert(this.column(), this, this.table())
-    console.log(queries)
     let query = queries.shift()
     let promise = mongoose.connection.beginTransaction().then(() => { // 启用事务
       return mongoose.connection.query(query.sql, query.data) // 插入主文档

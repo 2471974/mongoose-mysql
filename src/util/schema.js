@@ -9,16 +9,58 @@ export default {
   index() {
     return Array.prototype.join.call(arguments, this.glueIndex)
   },
-  formate (fields, data) {
-    
-  },
-  validate (fields, data) {},
-  insert (fields, data, tableName, autoIndex) {
+  fieldsArrayType (fields) {
     if (fields instanceof Array) {
       if (fields.length < 1) throw 'schema has empty array field'
       if (fields.length > 1) throw 'schema has array field, but length greater than 1'
       fields = fields[0].type
     }
+    return fields
+  },
+  formate (fields, data) {
+
+  },
+  validate (fields, data) {},
+  document (fields, tableName, keyIndex) {
+    let isArray = fields instanceof Array
+    fields = this.fieldsArrayType(fields)
+    keyIndex || (keyIndex = [])
+    tableName = this.table(tableName)
+    let result = [], columns = []
+    if (keyIndex.length > 0) {
+      columns.push('autoId', 'autoIndex')
+    } else {
+      columns.push('_id')
+    }
+    if (Object.prototype.toString.call(fields) !== '[object Object]') {
+      fields = {value: {type: fields}}
+    }
+    for (let field in fields) {
+      let value = fields[field]
+      let dataType = Object.prototype.toString.call(value.type)
+      switch (dataType) {
+        case '[object Array]':
+        case '[object Object]':
+          if (typeof value.formatter !== 'undefined' && value.formatter instanceof Schema.Formatter.Stringify) {
+            columns.push(field)
+          } else {
+            result.push(...this.document(value.type, this.table(tableName, field), [].concat(keyIndex, [field])))
+          }
+          break;
+        default:
+          columns.push(field)
+      }
+    }
+    let sql = []
+    sql.push("select ")
+    sql.push(columns.map(item => '`' + item + '`').join(','))
+    sql.push(' from ', tableName, ' where ')
+    sql.push(keyIndex.length > 0 ? 'autoId' : '_id', ' = ?')
+    result.unshift({sql: sql.join(''), tableName, keyIndex, isArray})
+    return result
+  },
+  insert (fields, data, tableName, autoIndex) {
+    fields = this.fieldsArrayType(fields)
     let result = [], columns = [], values = []
     if (typeof autoIndex !== 'undefined') {
       columns.push('autoId', 'autoIndex')
@@ -30,12 +72,8 @@ export default {
     tableName = this.table(tableName)
     autoIndex = this.index(autoIndex)
     if (Object.prototype.toString.call(fields) !== '[object Object]') {
-      fields = {
-        value: {type: fields}
-      }
-      data = {
-        value: data
-      }
+      fields = {value: {type: fields}}
+      data = {value: data}
     }
     for (let field in fields) {
       let dataValue = data[field]
@@ -134,11 +172,7 @@ export default {
   ddl (tableName, fields, withDrop, withAuto) {
     tableName = this.table(tableName)
     let result = []
-    if (fields instanceof Array) {
-      if (fields.length < 1) throw 'schema has empty array field'
-      if (fields.length > 1) throw 'schema has array field, but length greater than 1'
-      fields = fields[0].type
-    }
+    fields = this.fieldsArrayType(fields)
     if (withDrop) {
       result.push("drop table if exists `" + tableName + "`;")
     }
