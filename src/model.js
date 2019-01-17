@@ -18,12 +18,21 @@ class Model {
     return this._schema
   }
 
+  table () {
+    return this.schema().options.collection
+  }
+
+  column () {
+    return this.schema().fields
+  }
+
   save (callback) {
+    console.log(SchemaUtil.insert(this.column(), this, this.table()))
     callback()
   }
 
   ddl (withDrop) {
-    return SchemaUtil.ddl(this.schema().options.collection, this.schema().fields, withDrop)
+    return SchemaUtil.ddl(this.table(), this.column(), withDrop)
   }
 
 }

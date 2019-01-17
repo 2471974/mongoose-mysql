@@ -13,8 +13,62 @@ export default {
     
   },
   validate (fields, data) {},
-  insert (fields, data) {},
-  update (fields, data) {},
+  insert (fields, data, tableName, autoIndex) {
+    if (fields instanceof Array) {
+      if (fields.length < 1) throw 'schema has empty array field'
+      if (fields.length > 1) throw 'schema has array field, but length greater than 1'
+      fields = fields[0].type
+    }
+    let result = [], columns = [], values = []
+    if (typeof autoIndex !== 'undefined') {
+      columns.push('autoId', 'autoIndex')
+      values.push(undefined, autoIndex)
+    } else {
+      columns.push('_id')
+      values.push(null)
+    }
+    tableName = this.table(tableName)
+    autoIndex = this.index(autoIndex)
+    if (Object.prototype.toString.call(fields) !== '[object Object]') {
+      fields = {
+        value: {type: fields}
+      }
+    }
+    for (let field in fields) {
+      let dataValue = data[field]
+      if (typeof dataValue === 'undefined') continue
+      let value = fields[field]
+      let dataType = Object.prototype.toString.call(value.type)
+      switch (dataType) {
+        case '[object Array]':
+        case '[object Object]':
+          if (typeof value.formatter !== 'undefined' && value.formatter instanceof Schema.Formatter.Stringify) {
+            columns.push(field)
+            values.push(JSON.stringify(dataValue))
+          } else {
+            if (dataType === '[object Object]') value.type = [value.type]
+            value.type.forEach((element, index) => {
+              result.push(...this.insert(element, dataValue, this.table(tableName, field), this.index(autoIndex, field, index)))
+            })
+          }
+          break;
+        default:
+          columns.push(field)
+          values.push(dataValue)
+      }
+    }
+    let sql = []
+    sql.push("insert into `" + tableName + "` (")
+    sql.push(columns.map(item => '`' + item + '`').join(','))
+    sql.push(') values (')
+    sql.push(columns.fill('?').join(','))
+    sql.push(')')
+    result.unshift({sql: sql.join(''), data: values})
+    return result
+  },
+  update () {
+    
+  },
   delete (fields, data) {},
   optimizeType (fields) {
     let dataType = Object.prototype.toString.call(fields)

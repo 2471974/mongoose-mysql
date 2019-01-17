@@ -24,7 +24,24 @@ var CatSchema = new mongoose.Schema({
 
 var Cat = mongoose.model('Cat', CatSchema);
 
-var kitty = new Cat({ f1: 'Zildjian' });
+var kitty = new Cat({
+	f1: 'f1-test',
+	f2: {
+		f2c1: 'f2-c1'
+	},
+	f3: ['f3-1', 'f3-2', 'f3-3'],
+	f4: [{
+		f4c1: 'f4c1-1'
+	}, {
+		f4c1: 'f4c1-2'
+	}],
+	f5: 1224,
+	f6: new Date(),
+	f7: ['f7-1', 'f7-2'],
+	f8: {
+		f8c1: 'f8c1'
+	}
+});
 
 // console.log(kitty.schema().fields)
 // console.log(kitty.ddl(true).join('\n'))
