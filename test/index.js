@@ -47,11 +47,11 @@ var kitty = new Cat({
 // console.log(kitty.ddl(true).join('\n'))
 // console.log(kitty)
 
-kitty.save(function (err) {
+kitty.save(function (err, doc) {
   if (err) {
     console.log(err);
   } else {
-    console.log('meow');
+    console.log(doc);
   }
 });
 

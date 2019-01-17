@@ -27,13 +27,35 @@ class Model {
     return this.schema().fields
   }
 
+  findById (id, callback) {
+    console.log(arguments)
+    callback(null, id)
+  }
+
   save (callback) {
     let queries = SchemaUtil.insert(this.column(), this, this.table())
     let query = queries.shift()
-    mongoose.query(query.sql, query.data, (error, result) => {
-      console.log(error, result)
+    mongoose.connection.beginTransaction()
+    mongoose.connection.query(query.sql, query.data, (error, result) => {
+      if (error) {
+        callback && callback(error)
+        mongoose.connection.rollback()
+        return mongoose.Promise.reject(error)
+      }
+      Object.assign(this, {_id: result.insertId})
+      queries.forEach(query => {
+        query.data[0] = this._id
+        mongoose.connection.query(query.sql, query.data, (error, result) => {
+          if (error) {
+            callback && callback(error)
+            mongoose.connection.rollback()
+            return mongoose.Promise.reject(error)
+          }
+        })
+      })
     })
-    callback()
+    mongoose.connection.commit()
+    return this.findById(this._id, callback)
   }
 
   ddl (withDrop) {

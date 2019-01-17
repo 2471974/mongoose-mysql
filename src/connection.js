@@ -12,6 +12,15 @@ class Connection {
   query () {
     this.connection.query(...arguments)
   }
+  beginTransaction () {
+    this.connection.beginTransaction(...arguments)
+  }
+  commit () {
+    this.connection.commit(...arguments)
+  }
+  rollback () {
+    this.connection.rollback(...arguments)
+  }
 }
 
 export default Connection

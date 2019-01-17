@@ -9,10 +9,6 @@ class Mongoose {
     this.Promise = Promise
   }
 
-  // connect (uri, opts) {
-  //   throw 'TODO: convert uri to mysql'
-  // }
-
   connect (config) {
     this.connection = new Connection()
     this.connection.open(config)
@@ -20,10 +16,6 @@ class Mongoose {
 
   disconnect () {
     this.connection.close()
-  }
-
-  query () {
-    this.connection.query(...arguments)
   }
 
   model (name, schema) {
