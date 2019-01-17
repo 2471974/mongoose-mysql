@@ -33,6 +33,9 @@ export default {
       fields = {
         value: {type: fields}
       }
+      data = {
+        value: data
+      }
     }
     for (let field in fields) {
       let dataValue = data[field]
@@ -46,10 +49,14 @@ export default {
             columns.push(field)
             values.push(JSON.stringify(dataValue))
           } else {
-            if (dataType === '[object Object]') value.type = [value.type]
-            value.type.forEach((element, index) => {
-              result.push(...this.insert(element, dataValue, this.table(tableName, field), this.index(autoIndex, field, index)))
-            })
+            if (Object.prototype.toString.call(dataValue) !== dataType) break
+            if (dataType === '[object Object]') {
+              result.push(...this.insert(value.type, dataValue, this.table(tableName, field), this.index(autoIndex, field)))
+            } else {
+              dataValue.forEach((element, index) => {
+                result.push(...this.insert(value.type, element, this.table(tableName, field), this.index(autoIndex, field, index)))
+              })
+            }
           }
           break;
         default:
