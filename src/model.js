@@ -1,5 +1,6 @@
 import Schema from "./schema";
 import SchemaUtil from './util/schema'
+import mongoose from './index'
 
 class Model {
 
@@ -27,7 +28,11 @@ class Model {
   }
 
   save (callback) {
-    console.log(SchemaUtil.insert(this.column(), this, this.table()))
+    let queries = SchemaUtil.insert(this.column(), this, this.table())
+    let query = queries.shift()
+    mongoose.query(query.sql, query.data, (error, result) => {
+      console.log(error, result)
+    })
     callback()
   }
 

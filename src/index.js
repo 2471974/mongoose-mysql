@@ -1,6 +1,6 @@
-import mysql from 'mysql'
 import Schema from './schema'
 import Model from './model'
+import Connection from './connection';
 
 class Mongoose {
 
@@ -14,8 +14,16 @@ class Mongoose {
   // }
 
   connect (config) {
-    this.connection = mysql.createConnection(config)
-    this.connection.connect()
+    this.connection = new Connection()
+    this.connection.open(config)
+  }
+
+  disconnect () {
+    this.connection.close()
+  }
+
+  query () {
+    this.connection.query.call(arguments)
   }
 
   model (name, schema) {
