@@ -32,13 +32,17 @@ class Model {
     return mongoose.Promise.all(queries.map(query => {
       return mongoose.connection.query(query.sql, [id])
     })).then(results => {
-      results.forEach((result, index) => {
-        queries[index].result = result
-      })
-      callback || callback(null, queries)
-      return mongoose.Promise.resolve(queries)
+      let data = null
+      for (let index in results) {
+        let query = queries[index], result = results[index]
+        if (query.keyIndex.length === 0) { // 主文档
+          // TODO:数据不存在的情况
+        }
+      }
+      callback && callback(null, data)
+      return mongoose.Promise.resolve(data)
     }).catch(error => {
-      callback || callback(error)
+      callback && callback(error)
       return mongoose.Promise.reject(error)
     })
   }
