@@ -28,34 +28,39 @@ class Model {
   }
 
   findById (id, callback) {
-    console.log(arguments)
     callback(null, id)
   }
 
   save (callback) {
     let queries = SchemaUtil.insert(this.column(), this, this.table())
     let query = queries.shift()
-    mongoose.connection.beginTransaction()
-    mongoose.connection.query(query.sql, query.data, (error, result) => {
-      if (error) {
-        callback && callback(error)
-        mongoose.connection.rollback()
-        return mongoose.Promise.reject(error)
-      }
-      Object.assign(this, {_id: result.insertId})
-      queries.forEach(query => {
-        query.data[0] = this._id
-        mongoose.connection.query(query.sql, query.data, (error, result) => {
-          if (error) {
-            callback && callback(error)
-            mongoose.connection.rollback()
-            return mongoose.Promise.reject(error)
-          }
+    let promise = mongoose.connection.beginTransaction().then(() => { // 启用事务
+      return mongoose.connection.query(query.sql, query.data) // 插入主文档
+    })
+    queries.forEach(query => { // 插入子文档
+      promise = promise.then(result => {
+        return new mongoose.Promise((resolve, reject) => {
+          query.data[0] = result.insertId
+          mongoose.connection.query(query.sql, query.data).then(() => {
+            resolve(result) // 保留主文档执行结果
+          }).catch(error => reject(error))
         })
       })
     })
-    mongoose.connection.commit()
-    return this.findById(this._id, callback)
+    promise.then(result => { // 提交事务
+      return new mongoose.Promise((resolve, reject) => {
+        mongoose.connection.commit().then(() => {
+          resolve(result) // 保留主文档执行结果
+        }).catch(error => reject(error))
+      })
+    }).catch(error => {
+      callback && callback(error)
+      mongoose.connection.rollback() // 回滚事务
+      return mongoose.Promise.reject(error)
+    })
+    return promise.then(result => {
+      return this.findById(result.insertId, callback)
+    })
   }
 
   ddl (withDrop) {
