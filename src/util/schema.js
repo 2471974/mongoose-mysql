@@ -55,7 +55,11 @@ export default {
     sql.push("select ")
     sql.push(columns.map(item => '`' + item + '`').join(','))
     sql.push(' from ', tableName, ' where ')
-    sql.push(keyIndex.length > 0 ? 'autoId' : '_id', ' = ?')
+    if (keyIndex.length > 0) {
+      sql.push('autoId = ? order by autoIndex asc')
+    } else {
+      sql.push('_id = ?')
+    }
     result.unshift({sql: sql.join(''), tableName, keyIndex, isArray})
     return result
   },
