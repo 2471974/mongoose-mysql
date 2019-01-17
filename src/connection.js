@@ -10,7 +10,7 @@ class Connection {
     this.connection.end()
   }
   query () {
-    this.connection.query.call(arguments)
+    this.connection.query(...arguments)
   }
 }
 

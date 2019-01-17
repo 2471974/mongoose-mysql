@@ -23,7 +23,7 @@ class Mongoose {
   }
 
   query () {
-    this.connection.query.call(arguments)
+    this.connection.query(...arguments)
   }
 
   model (name, schema) {
