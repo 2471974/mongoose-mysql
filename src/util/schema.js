@@ -26,7 +26,7 @@ export default {
     fields = this.fieldsArrayType(fields)
     keyIndex || (keyIndex = [])
     tableName = this.table(tableName)
-    let result = [], columns = [], mappings = {}
+    let result = [], columns = [], mappings = []
     if (keyIndex.length > 0) {
       columns.push('autoId', 'autoIndex')
     } else {
@@ -34,6 +34,7 @@ export default {
     }
     if (Object.prototype.toString.call(fields) !== '[object Object]') {
       fields = {value: {type: fields}}
+      mappings.push((data) => {return data.value})
     }
     for (let field in fields) {
       let value = fields[field]
@@ -43,9 +44,10 @@ export default {
         case '[object Object]':
           if (typeof value.formatter !== 'undefined' && value.formatter instanceof Schema.Formatter.Stringify) {
             columns.push(field)
-            mappings[field] = (value) => {
-              return JSON.parse(value)
-            }
+            mappings.push(data => {
+              data[field] = JSON.parse(data[field])
+              return data
+            })
           } else {
             result.push(...this.document(value.type, this.table(tableName, field), [].concat(keyIndex, [field])))
           }
@@ -63,7 +65,7 @@ export default {
     } else {
       sql.push("_id = ?")
     }
-    result.unshift({sql: sql.join(''), tableName, columns, mappings, keyIndex, isArray})
+    result.unshift({sql: sql.join(''), tableName, columns, mappings: mappings.reverse(), keyIndex, isArray})
     return result
   },
   insert (fields, data, tableName, autoIndex) {
