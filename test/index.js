@@ -79,12 +79,16 @@ var kitty = new Cat({
 
 // console.log(Cat.ddl(true).join('\n'))
 
-kitty.save(function (err, doc) {
-  if (err) {
-    console.log(err);
-  } else {
-    console.log(doc);
-  }
-});
+// kitty.save(function (err, doc) {
+//   if (err) {
+//     console.log(err);
+//   } else {
+//     console.log(doc);
+//   }
+// });
+
+Cat.query().select('').where().sort({}).skip(1).limit(2).count(function (err, result) {
+	console.log(err, result)
+})
 
 console.log('Bye Bye!');

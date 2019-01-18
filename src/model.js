@@ -1,6 +1,7 @@
 import SchemaUtil from './util/schema'
 import mongoose from './index'
 import Document from './document'
+import Query from './query'
 
 /**
  * 静态模型
@@ -8,6 +9,10 @@ import Document from './document'
 class Model extends Document {
   static new (doc) {
     return new (this.model())(doc)
+  }
+
+  static query () {
+    return new Query()
   }
 
   static findById (id, callback) {
