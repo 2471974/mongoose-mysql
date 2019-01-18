@@ -6,12 +6,13 @@ import Document from './document'
  * 静态模型
  */
 class Model extends Document {
-  new (doc) {
-    return new Document(doc)
+  static new (doc) {
+    return new (this.model())(doc)
   }
 
   static findById (id, callback) {
     let queries = SchemaUtil.document(this.schema().fields, this.collection())
+    let _this = this
     return mongoose.Promise.all(queries.map(query => {
       return mongoose.connection.query(query.sql, [id])
     })).then(results => {
@@ -20,7 +21,7 @@ class Model extends Document {
         let query = queries[index], result = results[index]
         if (query.keyIndex.length === 0) { // 主文档
           if (result.length < 1) break // 主文档不存在
-          doc = result[0]
+          doc = Object.assign({}, result[0])
           query.mappings.forEach(mapping => doc = mapping(doc))
           continue
         }
@@ -44,14 +45,14 @@ class Model extends Document {
             } else {
               item._id = item.autoId + item.autoIndex
               query.mappings.forEach(mapping => item = mapping(item))
-              data[key] = item
+              data[key] = Object.assign({}, item)
             }
           })(doc, keyIndex)
         })
       }
-      let result = this.new(doc)
-      callback && callback(null, result)
-      return mongoose.Promise.resolve(result)
+      doc = _this.new(doc)
+      callback && callback(null, doc)
+      return mongoose.Promise.resolve(doc)
     }).catch(error => {
       callback && callback(error)
       return mongoose.Promise.reject(error)

@@ -176,9 +176,7 @@ export default {
    *  autoId - 存储所属文档的主键
    *  autoIndex - 存储记录在文档中的位置，如'0','f1','f1.0','f1.0.fx','f1.0.fx.0'
    */
-  ddl (tableName, fields, withDrop, withAuto) {
-    console.log(arguments)
-    return
+  ddl (fields, tableName, withDrop, withAuto) {
     tableName = this.table(tableName)
     let result = []
     fields = this.fieldsArrayType(fields)
@@ -207,7 +205,7 @@ export default {
           if (typeof value.formatter !== 'undefined' && value.formatter instanceof Schema.Formatter.Stringify) {
             sql.push("`", field, "` text NULL,")
           } else {
-            result.push(...this.ddl(this.table(tableName, field), value.type, withDrop, true))
+            result.push(...this.ddl(value.type, this.table(tableName, field), withDrop, true))
           }
           break;
         default:

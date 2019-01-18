@@ -77,8 +77,7 @@ var kitty = new Cat({
 	}]
 });
 
-console.log(Cat.ddl(true).join('\n'))
-return
+// console.log(Cat.ddl(true).join('\n'))
 
 kitty.save(function (err, doc) {
   if (err) {
