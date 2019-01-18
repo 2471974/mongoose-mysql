@@ -12,7 +12,6 @@ class Model extends Document {
 
   static findById (id, callback) {
     let queries = SchemaUtil.document(this.schema().fields, this.collection())
-    let _this = this
     return mongoose.Promise.all(queries.map(query => {
       return mongoose.connection.query(query.sql, [id])
     })).then(results => {
@@ -51,7 +50,7 @@ class Model extends Document {
           })(doc, keyIndex)
         })
       }
-      doc = _this.new(doc)
+      doc = this.new(doc)
       callback && callback(null, doc)
       return mongoose.Promise.resolve(doc)
     }).catch(error => {
