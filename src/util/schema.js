@@ -176,7 +176,7 @@ export default {
     let result = []
     fields = this.fieldsArrayType(fields)
     if (withDrop) {
-      result.push("drop table if exists `", tableName, "`;")
+      result.push(["drop table if exists `", tableName, "`;"].join(''))
     }
     let sql = []
     sql.push("create table `", tableName, "` (")
