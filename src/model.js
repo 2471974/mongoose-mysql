@@ -27,6 +27,7 @@ class Model extends Document {
         }
         if (result.length < 1) continue // 子文档不存在
         result.forEach(item => {
+          item = Object.assign({}, item)
           let keyIndex = item.autoIndex
           try {
             keyIndex = keyIndex.split('.').slice(1)
@@ -45,7 +46,7 @@ class Model extends Document {
             } else {
               item._id = item.autoId + item.autoIndex
               query.mappings.forEach(mapping => item = mapping(item))
-              data[key] = Object.assign({}, item)
+              data[key] = item
             }
           })(doc, keyIndex)
         })
