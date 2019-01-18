@@ -35,27 +35,36 @@ class Model {
       let data = null
       for (let index in results) {
         let query = queries[index], result = results[index]
-        result = result.map(item => {
-          !item._id && item.autoId && (item._id = item.autoId + item.autoIndex)
-          query.mappings.forEach(mapping => item = mapping(item))
-          return item
-        })
         if (query.keyIndex.length === 0) { // 主文档
           if (result.length < 1) break // 主文档不存在
           data = result[0]
+          query.mappings.forEach(mapping => data = mapping(data))
           continue
         }
         if (result.length < 1) continue // 子文档不存在
-        (function extend(data, keyIndex) {
-          let key = keyIndex.shift()
-          if (keyIndex.length > 0) {
-            if (typeof data[key] !== 'undefined') {
-              extend(data[key], keyIndex)
-            }
-          } else {
-            data[key] = query.isArray ? result : result.shift()
+        result.forEach(item => {
+          let keyIndex = item.autoIndex
+          try {
+            keyIndex = keyIndex.split('.').slice(1)
+          } catch (e) { // Babel转换异常处理，理论上不会走到这一步
+            keyIndex = query.keyIndex
           }
-        })(data, query.keyIndex)
+          (function extend(data, keyIndex) {
+            let key = keyIndex.shift()
+            if (keyIndex.length > 0) {
+              if (keyIndex.length === 1 && query.isArray) {
+                typeof data[key] === 'undefined' && (data[key] = [])
+              }
+              if (typeof data[key] !== 'undefined') {
+                extend(data[key], keyIndex)
+              }
+            } else {
+              item._id = item.autoId + item.autoIndex
+              query.mappings.forEach(mapping => item = mapping(item))
+              data[key] = item
+            }
+          })(data, keyIndex)
+        })
       }
       callback && callback(null, data)
       return mongoose.Promise.resolve(data)
