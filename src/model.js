@@ -32,13 +32,25 @@ class Model {
     return mongoose.Promise.all(queries.map(query => {
       return mongoose.connection.query(query.sql, [id])
     })).then(results => {
-      console.log(results)
       let data = null
       for (let index in results) {
         let query = queries[index], result = results[index]
         if (query.keyIndex.length === 0) { // 主文档
-          // TODO:数据不存在的情况
+          if (result.length < 1) break // 主文档不存在
+          data = result[0]
+          continue
         }
+        if (result.length < 1) continue // 子文档不存在
+        (function extend(data, keyIndex) {
+          let key = keyIndex.shift()
+          if (keyIndex.length > 0) {
+            if (typeof data[key] !== 'undefined') {
+              extend(data[key], keyIndex)
+            }
+          } else {
+            data[key] = query.isArray ? result : result.shift()
+          }
+        })(data, query.keyIndex)
       }
       callback && callback(null, data)
       return mongoose.Promise.resolve(data)
