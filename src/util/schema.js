@@ -177,6 +177,8 @@ export default {
    *  autoIndex - 存储记录在文档中的位置，如'0','f1','f1.0','f1.0.fx','f1.0.fx.0'
    */
   ddl (tableName, fields, withDrop, withAuto) {
+    console.log(arguments)
+    return
     tableName = this.table(tableName)
     let result = []
     fields = this.fieldsArrayType(fields)

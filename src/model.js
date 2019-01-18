@@ -1,44 +1,27 @@
-import Schema from "./schema";
 import SchemaUtil from './util/schema'
 import mongoose from './index'
+import Document from './document'
 
-class Model {
-
-  constructor (name, schema) {
-    this._name = name
-    this._schema = schema instanceof Schema ? schema : new Schema(schema, {
-      collection: name
-    })
+/**
+ * 静态模型
+ */
+class Model extends Document {
+  new (doc) {
+    return new Document(doc)
   }
 
-  name () {
-    return this._name
-  }
-
-  schema () {
-    return this._schema
-  }
-
-  table () {
-    return this.schema().options.collection
-  }
-
-  column () {
-    return this.schema().fields
-  }
-
-  findById (id, callback) {
-    let queries = SchemaUtil.document(this.column(), this.table())
+  static findById (id, callback) {
+    let queries = SchemaUtil.document(this.schema().fields, this.collection())
     return mongoose.Promise.all(queries.map(query => {
       return mongoose.connection.query(query.sql, [id])
     })).then(results => {
-      let data = null
+      let doc = null
       for (let index in results) {
         let query = queries[index], result = results[index]
         if (query.keyIndex.length === 0) { // 主文档
           if (result.length < 1) break // 主文档不存在
-          data = result[0]
-          query.mappings.forEach(mapping => data = mapping(data))
+          doc = result[0]
+          query.mappings.forEach(mapping => doc = mapping(doc))
           continue
         }
         if (result.length < 1) continue // 子文档不存在
@@ -63,19 +46,20 @@ class Model {
               query.mappings.forEach(mapping => item = mapping(item))
               data[key] = item
             }
-          })(data, keyIndex)
+          })(doc, keyIndex)
         })
       }
-      callback && callback(null, data)
-      return mongoose.Promise.resolve(data)
+      let result = this.new(doc)
+      callback && callback(null, result)
+      return mongoose.Promise.resolve(result)
     }).catch(error => {
       callback && callback(error)
       return mongoose.Promise.reject(error)
     })
   }
 
-  save (callback) {
-    let queries = SchemaUtil.insert(this.column(), this, this.table())
+  static save (doc, callback) {
+    let queries = SchemaUtil.insert(this.schema().fields, doc, this.collection())
     let query = queries.shift()
     let promise = mongoose.connection.beginTransaction().then(() => { // 启用事务
       return mongoose.connection.query(query.sql, query.data) // 插入主文档
@@ -106,8 +90,8 @@ class Model {
     })
   }
 
-  ddl (withDrop) {
-    return SchemaUtil.ddl(this.table(), this.column(), withDrop)
+  static ddl (withDrop) {
+    return SchemaUtil.ddl(this.schema().fields, this.collection(), withDrop)
   }
 
 }

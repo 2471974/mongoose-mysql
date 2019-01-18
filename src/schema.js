@@ -7,7 +7,7 @@ class Schema {
     this.options = options || {}
   }
 
-  plugin (params) {
+  plugin (options) {
 
   }
 

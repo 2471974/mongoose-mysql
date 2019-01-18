@@ -77,9 +77,8 @@ var kitty = new Cat({
 	}]
 });
 
-// console.log(kitty.schema().fields)
-// console.log(kitty.ddl(true).join('\n'))
-// console.log(kitty)
+console.log(Cat.ddl(true).join('\n'))
+return
 
 kitty.save(function (err, doc) {
   if (err) {
