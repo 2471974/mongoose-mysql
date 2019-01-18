@@ -35,6 +35,13 @@ class Model {
       let data = null
       for (let index in results) {
         let query = queries[index], result = results[index]
+        result.map(item => {
+          !item._id && item.autoId && (item._id = item.autoId + item.autoIndex)
+          for (let field in query.mappings) {
+            item[field] = query.mappings[field](item[field])
+          }
+          return item
+        })
         if (query.keyIndex.length === 0) { // 主文档
           if (result.length < 1) break // 主文档不存在
           data = result[0]
