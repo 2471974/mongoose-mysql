@@ -1,5 +1,5 @@
 # mongoose-mysql
-Mongoose for MySQL used for replace of MongoDB
+Mongoose npm package used for replace of MongoDB with MySQL
 
 ## Schema
 - userCode: { type: String, unique: true, required: true }, // 唯一、必填约束，通过移除保留关键字判断字段是否为文档类型
