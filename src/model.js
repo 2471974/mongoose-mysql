@@ -32,6 +32,7 @@ class Model {
     return mongoose.Promise.all(queries.map(query => {
       return mongoose.connection.query(query.sql, [id])
     })).then(results => {
+      console.log(results)
       let data = null
       for (let index in results) {
         let query = queries[index], result = results[index]
