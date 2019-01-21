@@ -128,7 +128,7 @@ export default {
     tableName = this.table(tableName)
     autoIndex = this.index(autoIndex)
     let result = {columns: {}, mappings: {}}, columns = [], mappings = {}
-    if (typeof autoIndex !== 'undefined') {
+    if (autoIndex !== '') {
       columns.push('autoId', 'autoIndex')
     } else {
       columns.push('_id')
@@ -157,8 +157,8 @@ export default {
     } else {
       Object.assign(mappings, {[autoIndex]: {table: tableName, field: 'value'}})
     }
-    Object.assign(result.columns, {[tableName]: columns})
-    Object.assign(result.mappings, mappings)
+    result.columns = Object.assign({[tableName]: columns}, result.columns)
+    result.mappings = Object.assign(mappings, result.mappings)
     return result
   },
   update () {

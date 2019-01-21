@@ -4,7 +4,16 @@ class Query {
 
   constructor (model) {
     this.$model = model
-    this.$query = {}
+    this.$query = {
+      distinct: '_id',
+      select: [],
+      where: {},
+      sort: {},
+      skip: -1,
+      limit: -1,
+      populate: {}
+    }
+    this.mapping = SchemaUtil.mapping(this.$model.schema().fields, this.$model.collection())
   }
 
   distinct (field) {
@@ -13,11 +22,7 @@ class Query {
   }
 
   select (fields) {
-    this.$query.select || (this.$query.select = new Set())
-    fields.split(' ').forEach(item => {
-      item = item.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
-      item && this.$query.select.add(item)
-    })
+    this.$query.select.push(...fields.split(' ').map(item => {return item.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')}))
     return this
   }
 
@@ -63,9 +68,44 @@ class Query {
     callback && callback()
   }
 
+  buildWhere (condition) {
+    return {where: null, data: []}
+  }
+
+  buildOrder (order) {
+    if (Object.keys(order).length === 0) return null
+    let orders = []
+    for (let field in order) {
+      orders.push(this.mapField(field) + ' ' + (order[field] === -1 ? 'desc' : 'asc'))
+    }
+    return orders.join(', ')
+  }
+
+  mapField (field) {
+    let mapping = this.mapping.mappings[field]
+    if (!mapping) throw field + ' can not be mapped'
+    return ['`', mapping.table, '`.`', mapping.field, '`'].join('')
+  }
+
   exec (callback) {
-    let mapping = SchemaUtil.mapping(this.$model.schema().fields, this.$model.collection())
-    callback && callback(mapping)
+    let sql = []
+    sql.push('select distinct ',  this.mapField(this.$query.distinct), ' from ')
+    let tables = Object.keys(this.mapping.columns)
+    let table = tables.shift()
+    sql.push('`', table, '`')
+    tables.forEach(element => {
+      sql.push(' left join `', element, '` on `', element, '`.`_id` = `', table, '`.`_id`')
+    })
+    let {where, data} = this.buildWhere(this.$query.where)
+    where && sql.push(' where ', where)
+    let order = this.buildOrder(this.$query.order)
+    order && sql.push(' order by ', order)
+    if (this.$query.limit > 0) {
+      sql.push(' limit ')
+      this.$query.skip > -1 && sql.push(this.$query.skip, ', ')
+      sql.push(this.$query.limit)
+    }
+    callback && callback(sql.join(''), data)
   }
 
   cursor () {
