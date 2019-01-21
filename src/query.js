@@ -138,8 +138,13 @@ class Query {
           children.length > 0 && where.push('(' + children.join(key === '$and' ? ' and ' : ' or ') + ')')
           break
         default:
-          where.push(this.mapField(key) + ' = ?')
-          data.push(value)
+          if (value instanceof RegExp) {
+            where.push(this.mapField(key) + ' like ?')
+            data.push('%' + value.toString() + '%')
+          } else {
+            where.push(this.mapField(key) + ' = ?')
+            data.push(value)
+          }
       }
     }
     return {where: where.join(' and '), data}
