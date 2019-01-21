@@ -99,6 +99,10 @@ class Query {
           where.push(this.mapField(parent) + ' in (' + [].concat(value).fill('?').join(', ') + ')')
           data.push(...value)
           break
+        case '$nin':
+          where.push(this.mapField(parent) + ' not in (' + [].concat(value).fill('?').join(', ') + ')')
+          data.push(...value)
+          break
         case '$exists':
           where.push(this.mapField(parent) +  (value ? ' is not null' : ' is null'))
           break
