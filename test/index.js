@@ -104,7 +104,7 @@ let condition = {
 // Cat.query().select('f1 f5 f10.f10c1').where({f1: 'f1-test'}).sort({f5: -1}).skip(0).limit(2).count(function (err, result) {
 // 	console.log(err, result)
 // })
-Cat.removeById([2, 4], (error, result) => {
+Cat.remove({'_id': {'$lte': 3}}, (error, result) => {
 	console.log(error, result)
 })
 

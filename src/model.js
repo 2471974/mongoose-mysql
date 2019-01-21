@@ -23,6 +23,14 @@ class Model extends Document {
     return new Query(this.model())
   }
 
+  static remove(condition, callback) {
+    return this.query().where(condition).distinct('_id').exec().then(result => {
+      return this.removeById(result, callback)
+    }).catch(error => {
+      return mongoose.Promise.reject(error)
+    })
+  }
+
   static removeById (id, callback) {
     if (Object.prototype.toString.call(id) === '[object Object]') id = id._id
     let queries = [], ids = id instanceof Array ? id : [id]

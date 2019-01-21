@@ -8,7 +8,7 @@ class Query {
       distinct: null,
       select: [],
       where: {},
-      sort: {},
+      order: {},
       skip: -1,
       limit: -1,
       populate: {}
