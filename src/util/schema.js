@@ -22,10 +22,6 @@ export default {
     }
     return fields
   },
-  formate (fields, data) {
-
-  },
-  validate (fields, data) {},
   insert (fields, data, tableName, autoIndex) {
     fields = this.fieldsArrayType(fields)
     let result = [], columns = [], values = []
@@ -122,10 +118,6 @@ export default {
     result.mappings = Object.assign(mappings, result.mappings)
     return result
   },
-  update () {
-    
-  },
-  delete (fields, data) {},
   optimizeType (fields) {
     let dataType = Object.prototype.toString.call(fields)
     switch (dataType) {

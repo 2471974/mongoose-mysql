@@ -23,6 +23,46 @@ class Model extends Document {
     return new Query(this.model())
   }
 
+  static removeById (id, callback) {
+    if (Object.prototype.toString.call(id) === '[object Object]') id = id._id
+    let queries = [], ids = id instanceof Array ? id : [id]
+    let tables = this.mapping().tables
+    let tableName = Object.keys(tables)[0] // 主表
+    for (let table in tables) {
+      let sql = []
+      sql.push('delete from `', table, '` where ', table === tableName ? '`_id`' : '`autoId`')
+      sql.push(' in (', [].concat(ids).fill('?').join(', '), ')')
+      queries.push({sql: sql.join(''), data: ids})
+    }
+    let query = queries.shift()
+    let promise = mongoose.connection.beginTransaction().then(() => { // 启用事务
+      return mongoose.connection.query(query.sql, query.data) // 删除主文档
+    })
+    queries.forEach(query => { // 删除子文档
+      promise = promise.then(result => {
+        return new mongoose.Promise((resolve, reject) => {
+          mongoose.connection.query(query.sql, query.data).then(() => {
+            resolve(result) // 保留主文档执行结果
+          }).catch(error => reject(error))
+        })
+      })
+    })
+    return promise.then(result => { // 提交事务
+      return new mongoose.Promise((resolve, reject) => {
+        mongoose.connection.commit().then(() => {
+          resolve(result) // 保留主文档执行结果
+        }).catch(error => reject(error))
+      })
+    }).catch(error => {
+      callback && callback(error)
+      mongoose.connection.rollback() // 回滚事务
+      return mongoose.Promise.reject(error)
+    }).then(result => {
+      callback && callback(null, result)
+      return mongoose.Promise.resolve(result.affectedRows)
+    })
+  }
+
   static findById (id, fields, callback) {
     if (typeof fields === 'function') {
       callback = fields
