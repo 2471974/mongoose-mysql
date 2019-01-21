@@ -7,6 +7,14 @@ import Query from './query'
  * 静态模型
  */
 class Model extends Document {
+
+  static mapping() {
+    if (!this.$mapping) {
+      this.$mapping = SchemaUtil.mapping(this.schema().fields, this.collection())
+    }
+    return this.$mapping
+  }
+
   static new (doc) {
     return new (this.model())(doc)
   }

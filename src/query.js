@@ -1,5 +1,3 @@
-import SchemaUtil from './util/schema'
-
 class Query {
 
   constructor (model) {
@@ -13,7 +11,7 @@ class Query {
       limit: -1,
       populate: {}
     }
-    this.mapping = SchemaUtil.mapping(this.$model.schema().fields, this.$model.collection())
+    this.mapping = model.mapping()
   }
 
   distinct (field) {
@@ -68,8 +66,64 @@ class Query {
     callback && callback()
   }
 
-  buildWhere (condition) {
-    return {where: null, data: []}
+  buildWhere (condition, parent) {
+    if (Object.keys(condition).length === 0) return {where: null, data: []}
+    let where = [], data = []
+    for (let key in condition) {
+      let value = condition[key]
+      if (Object.prototype.toString.call(value) === '[object Object]') {
+        let result = this.buildWhere(value, key)
+        if (!result.where) continue
+        where.push('(' + result.where + ')')
+        data.push(...result.data)
+        continue
+      }
+      let lkey = key.toLowerCase()
+      switch (lkey) {
+        case '$in':
+          where.push(this.mapField(parent) + ' in (' + [].concat(value).fill('?').join(', ') + ')')
+          data.push(...value)
+          break
+        case '$exists':
+          where.push(this.mapField(parent) +  (value ? ' is not null' : ' is null'))
+          break
+        case '$ne':
+          where.push(this.mapField(parent) + ' != ?')
+          data.push(value)
+          break
+        case '$gte':
+          where.push(this.mapField(parent) + ' >= ?')
+          data.push(value)
+          break
+        case '$gt':
+          where.push(this.mapField(parent) + ' > ?')
+          data.push(value)
+          break
+        case '$lte':
+          where.push(this.mapField(parent) + ' <= ?')
+          data.push(value)
+          break
+        case '$lt':
+          where.push(this.mapField(parent) + ' < ?')
+          data.push(value)
+          break
+        case '$and':
+        case '$or':
+          let children = []
+          value.forEach(element => {
+            let result = this.buildWhere(element, key)
+            if (!result.where) return
+            children.push(result.where)
+            data.push(...result.data)
+          })
+          children.length > 0 && where.push('(' + children.join(key === '$and' ? ' and ' : ' or ') + ')')
+          break
+        default:
+          where.push(this.mapField(key) + ' = ?')
+          data.push(value)
+      }
+    }
+    return {where: where.join(' and '), data}
   }
 
   buildOrder (order) {

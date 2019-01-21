@@ -86,8 +86,22 @@ var kitty = new Cat({
 //     console.log(doc);
 //   }
 // });
-
-Cat.query().select('').where().sort({f5: -1}).skip(1).limit(2).exec(function (err, result) {
+let condition = {
+	"f5": {"$in": ["1", "2", "3", "5"]},
+	"f1": "1",
+	"f10.f10c1": {"$exists": false},
+	"$or": [{
+				"f6": {"$gte": new Date(), "$lte": new Date()}
+		}, {
+			"$and": [{
+					"f11.$.f11c1": {"$exists": true}
+				}, {
+					"f2.f2c1": {"$ne": "1"}
+				}
+			]
+	}]
+}
+Cat.query().select('').where(condition).sort({f5: -1}).skip(1).limit(2).exec(function (err, result) {
 	console.log(err, result)
 })
 

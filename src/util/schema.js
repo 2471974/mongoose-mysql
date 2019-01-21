@@ -119,7 +119,7 @@ export default {
     let sql = []
     sql.push("insert into `", tableName, "` (")
     sql.push(columns.map(item => '`' + item + '`').join(','))
-    sql.push(") values (", columns.fill('?').join(','), ")")
+    sql.push(") values (", [].concat(columns).fill('?').join(','), ")")
     result.unshift({sql: sql.join(''), data: values})
     return result
   },
@@ -253,11 +253,12 @@ export default {
           break;
         default:
           if (value.type === String) {
-            sql.push("`", field, "` varchar(255) NOT NULL DEFAULT '',")
+            sql.push("`", field, "` varchar(255) NULL,")
           } else if (value.type === Number) {
-            sql.push("`", field, "` double NOT NULL DEFAULT 0,")
+            sql.push("`", field, "` double NULL,")
           } else if (value.type === Date) {
-            sql.push("`", field, "` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,")
+            // sql.push("`", field, "` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,")
+            sql.push("`", field, "` datetime NULL,")
           } else {
             throw 'schema has not supported field [' + field + '] with type [' + dataType + '] in ' + JSON.stringify(fields)
           }
