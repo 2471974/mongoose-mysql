@@ -85,9 +85,7 @@ class Model extends Document {
           }
           if (result.length < 1) continue // 子文档不存在
           result.forEach(item => {
-            item = Object.assign({}, item)
-            console.log(item, item.autoIndex)
-            let keyIndex = item.autoIndex.split('.')
+            item = Object.assign({}, item);
             (function extend(data, keyIndex) {
               let key = keyIndex.shift()
               if (keyIndex.length > 0) {
@@ -98,11 +96,11 @@ class Model extends Document {
                   extend(data[key], keyIndex)
                 }
               } else {
-                item._id = item.autoId + item.autoIndex
+                item._id = SchemaUtil.index(item.autoId, item.autoIndex)
                 table.maps.forEach(map => item = map(item))
                 data[key] = item
               }
-            })(doc, keyIndex)
+            })(doc, item.autoIndex.split('.'))
           })
         }
         if (doc !== null) data.push(this.new(doc))

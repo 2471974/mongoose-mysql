@@ -81,7 +81,7 @@ export default {
     fields = this.fieldsArrayType(fields)
     tableName = this.table(tableName)
     autoIndex = this.index(autoIndex)
-    let result = {columns: {}, mappings: {}}, columns = [], mappings = {}, maps = []
+    let result = {tables: {}, mappings: {}}, columns = [], mappings = {}, maps = []
     if (autoIndex !== '') {
       columns.push('autoId', 'autoIndex')
     } else {
@@ -104,7 +104,7 @@ export default {
               })
             } else {
               let r = this.mapping(value.type, this.table(tableName, field), dataType === '[object Object]' ? this.index(autoIndex, field) : this.index(autoIndex, field, '$'))
-              Object.assign(result.columns, r.columns)
+              Object.assign(result.tables, r.tables)
               Object.assign(result.mappings, r.mappings)
             }
             break;
@@ -114,10 +114,11 @@ export default {
         }
       }
     } else {
+      columns.push('value')
       Object.assign(mappings, {[autoIndex]: {table: tableName, field: 'value'}})
       maps.push((data) => {return data.value})
     }
-    result.tables = Object.assign({[tableName]: {columns, maps, isArray}}, result.columns)
+    result.tables = Object.assign({[tableName]: {columns, maps, isArray}}, result.tables)
     result.mappings = Object.assign(mappings, result.mappings)
     return result
   },
