@@ -79,13 +79,13 @@ var kitty = new Cat({
 
 // console.log(Cat.ddl(true).join('\n'))
 
-// kitty.save(function (err, doc) {
-//   if (err) {
-//     console.log(err);
-//   } else {
-//     console.log(doc);
-//   }
-// });
+kitty.save(function (err, doc) {
+  if (err) {
+    console.log(err);
+  } else {
+    console.log(doc);
+  }
+});
 let condition = {
 	"f5": {"$in": ["1", "2", "3", "5"]},
 	"f1": "1",
@@ -101,7 +101,7 @@ let condition = {
 			]
 	}]
 }
-Cat.query().select('').where(condition).sort({f5: -1}).skip(1).limit(2).exec(function (err, result) {
+Cat.query().select('f1 f5 f10.f10c1').where({f1: 'f1-test'}).sort({f5: -1}).skip(0).limit(2).exec(function (err, result) {
 	console.log(err, result)
 })
 

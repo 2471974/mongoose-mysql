@@ -1,3 +1,5 @@
+import mongoose from './index'
+
 class Query {
 
   constructor (model) {
@@ -148,7 +150,7 @@ class Query {
     let table = tables.shift()
     sql.push('`', table, '`')
     tables.forEach(element => {
-      sql.push(' left join `', element, '` on `', element, '`.`_id` = `', table, '`.`_id`')
+      sql.push(' left join `', element, '` on `', element, '`.`autoId` = `', table, '`.`_id`')
     })
     let {where, data} = this.buildWhere(this.$query.where)
     where && sql.push(' where ', where)
@@ -159,7 +161,9 @@ class Query {
       this.$query.skip > -1 && sql.push(this.$query.skip, ', ')
       sql.push(this.$query.limit)
     }
-    callback && callback(sql.join(''), data)
+    return mongoose.connection.query(sql.join(''), data).then(result => {
+      console.log(sql.join(''), result)
+    })
   }
 
   cursor () {
