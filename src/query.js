@@ -65,7 +65,20 @@ class Query {
   }
 
   count (callback) {
-    callback && callback()
+    let sql = [], distinct = this.$query.distinct ? this.$query.distinct : '_id'
+    sql.push('select count(distinct ',  this.mapField(distinct), ') as ct from ')
+    let tables = Object.keys(this.mapping.tables)
+    let table = tables.shift()
+    sql.push('`', table, '`')
+    tables.forEach(element => {
+      sql.push(' left join `', element, '` on `', element, '`.`autoId` = `', table, '`.`_id`')
+    })
+    let {where, data} = this.buildWhere(this.$query.where)
+    where && sql.push(' where ', where)
+    return mongoose.connection.query(sql.join(''), data).then(result => {
+      callback && callback(null, result[0].ct)
+      return mongoose.Promise.resolve(result)
+    })
   }
 
   buildWhere (condition, parent) {
@@ -166,15 +179,16 @@ class Query {
       let field = this.mapping.mappings[distinct].field
       result = result.map(element => element[field])
       if (!this.$query.distinct) {
-        return this.$model.findById(result, this.$query.select)
+        return this.$model.findById(result, this.$query.select, callback)
       }
       callback && callback(null, result)
       return mongoose.Promise.resolve(result)
     })
   }
 
-  cursor () {
-    return [][Symbol.iterator]()
+  async cursor () {
+    let result = await this.exec()
+    return result[Symbol.iterator]()
   }
 }
 
