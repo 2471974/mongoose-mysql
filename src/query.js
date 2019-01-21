@@ -1,3 +1,5 @@
+import SchemaUtil from './util/schema'
+
 class Query {
 
   constructor (model) {
@@ -62,7 +64,8 @@ class Query {
   }
 
   exec (callback) {
-    callback && callback()
+    let mapping = SchemaUtil.mapping(this.$model.schema().fields, this.$model.collection())
+    callback && callback(mapping)
   }
 
   cursor () {

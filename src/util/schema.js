@@ -7,7 +7,12 @@ export default {
     return Array.prototype.join.call(arguments, this.glueTable)
   },
   index() {
-    return Array.prototype.join.call(arguments, this.glueIndex)
+    let args = Array.prototype.filter.call(arguments, item => {
+      if (typeof item === 'undefined') return false
+      if (item === '') return false
+      return true
+    })
+    return args.join(this.glueIndex)
   },
   fieldsArrayType (fields) {
     if (fields instanceof Array) {
@@ -116,6 +121,44 @@ export default {
     sql.push(columns.map(item => '`' + item + '`').join(','))
     sql.push(") values (", columns.fill('?').join(','), ")")
     result.unshift({sql: sql.join(''), data: values})
+    return result
+  },
+  mapping (fields, tableName, autoIndex) {
+    fields = this.fieldsArrayType(fields)
+    tableName = this.table(tableName)
+    autoIndex = this.index(autoIndex)
+    let result = {columns: {}, mappings: {}}, columns = [], mappings = {}
+    if (typeof autoIndex !== 'undefined') {
+      columns.push('autoId', 'autoIndex')
+    } else {
+      columns.push('_id')
+      Object.assign(mappings, {[this.index(autoIndex, '_id')]: {table: tableName, field: '_id'}})
+    }
+    if (Object.prototype.toString.call(fields) === '[object Object]') {
+      for (let field in fields) {
+        let value = fields[field]
+        let dataType = Object.prototype.toString.call(value.type)
+        switch (dataType) {
+          case '[object Array]':
+          case '[object Object]':
+            if (typeof value.formatter !== 'undefined' && value.formatter instanceof Schema.Formatter.Stringify) {
+              columns.push(field)
+            } else {
+              let r = this.mapping(value.type, this.table(tableName, field), dataType === '[object Object]' ? this.index(autoIndex, field) : this.index(autoIndex, field, '$'))
+              Object.assign(result.columns, r.columns)
+              Object.assign(result.mappings, r.mappings)
+            }
+            break;
+          default:
+            columns.push(field)
+            Object.assign(mappings, {[this.index(autoIndex, field)]: {table: tableName, field}})
+        }
+      }
+    } else {
+      Object.assign(mappings, {[autoIndex]: {table: tableName, field: 'value'}})
+    }
+    Object.assign(result.columns, {[tableName]: columns})
+    Object.assign(result.mappings, mappings)
     return result
   },
   update () {

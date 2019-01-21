@@ -12,7 +12,7 @@ class Model extends Document {
   }
 
   static query () {
-    return new Query()
+    return new Query(this.model())
   }
 
   static findById (id, callback) {

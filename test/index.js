@@ -87,7 +87,7 @@ var kitty = new Cat({
 //   }
 // });
 
-Cat.query().select('').where().sort({}).skip(1).limit(2).count(function (err, result) {
+Cat.query().select('').where().sort({}).skip(1).limit(2).exec(function (err, result) {
 	console.log(err, result)
 })
 
