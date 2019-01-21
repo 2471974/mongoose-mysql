@@ -26,53 +26,6 @@ export default {
 
   },
   validate (fields, data) {},
-  document (fields, tableName, keyIndex) {
-    let isArray = fields instanceof Array
-    fields = this.fieldsArrayType(fields)
-    keyIndex || (keyIndex = [])
-    tableName = this.table(tableName)
-    let result = [], columns = [], mappings = []
-    if (keyIndex.length > 0) {
-      columns.push('autoId', 'autoIndex')
-    } else {
-      columns.push('_id')
-    }
-    if (Object.prototype.toString.call(fields) !== '[object Object]') {
-      fields = {value: {type: fields}}
-      mappings.push((data) => {return data.value})
-    }
-    for (let field in fields) {
-      let value = fields[field]
-      let dataType = Object.prototype.toString.call(value.type)
-      switch (dataType) {
-        case '[object Array]':
-        case '[object Object]':
-          if (typeof value.formatter !== 'undefined' && value.formatter instanceof Schema.Formatter.Stringify) {
-            columns.push(field)
-            mappings.push(data => {
-              data[field] = JSON.parse(data[field])
-              return data
-            })
-          } else {
-            result.push(...this.document(value.type, this.table(tableName, field), [].concat(keyIndex, [field])))
-          }
-          break;
-        default:
-          columns.push(field)
-      }
-    }
-    let sql = []
-    sql.push("select ")
-    sql.push(columns.map(item => '`' + item + '`').join(','))
-    sql.push(" from `", tableName, "` where ")
-    if (keyIndex.length > 0) {
-      sql.push("autoId = ? order by autoIndex asc")
-    } else {
-      sql.push("_id = ?")
-    }
-    result.unshift({sql: sql.join(''), tableName, columns, mappings: mappings.reverse(), keyIndex, isArray})
-    return result
-  },
   insert (fields, data, tableName, autoIndex) {
     fields = this.fieldsArrayType(fields)
     let result = [], columns = [], values = []
@@ -124,10 +77,11 @@ export default {
     return result
   },
   mapping (fields, tableName, autoIndex) {
+    let isArray = fields instanceof Array
     fields = this.fieldsArrayType(fields)
     tableName = this.table(tableName)
     autoIndex = this.index(autoIndex)
-    let result = {columns: {}, mappings: {}}, columns = [], mappings = {}
+    let result = {columns: {}, mappings: {}}, columns = [], mappings = {}, maps = []
     if (autoIndex !== '') {
       columns.push('autoId', 'autoIndex')
     } else {
@@ -143,6 +97,11 @@ export default {
           case '[object Object]':
             if (typeof value.formatter !== 'undefined' && value.formatter instanceof Schema.Formatter.Stringify) {
               columns.push(field)
+              maps.push(data => {
+                if (typeof data[field] === 'undefined') return data
+                data[field] = JSON.parse(data[field])
+                return data
+              })
             } else {
               let r = this.mapping(value.type, this.table(tableName, field), dataType === '[object Object]' ? this.index(autoIndex, field) : this.index(autoIndex, field, '$'))
               Object.assign(result.columns, r.columns)
@@ -156,8 +115,9 @@ export default {
       }
     } else {
       Object.assign(mappings, {[autoIndex]: {table: tableName, field: 'value'}})
+      maps.push((data) => {return data.value})
     }
-    result.columns = Object.assign({[tableName]: columns}, result.columns)
+    result.tables = Object.assign({[tableName]: {columns, maps, isArray}}, result.columns)
     result.mappings = Object.assign(mappings, result.mappings)
     return result
   },

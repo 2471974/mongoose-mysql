@@ -146,7 +146,7 @@ class Query {
   exec (callback) {
     let sql = [], distinct = this.$query.distinct ? this.$query.distinct : '_id'
     sql.push('select distinct ',  this.mapField(distinct), ' from ')
-    let tables = Object.keys(this.mapping.columns)
+    let tables = Object.keys(this.mapping.tables)
     let table = tables.shift()
     sql.push('`', table, '`')
     tables.forEach(element => {
