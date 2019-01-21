@@ -5,7 +5,7 @@ class Query {
   constructor (model) {
     this.$model = model
     this.$query = {
-      distinct: '_id',
+      distinct: null,
       select: [],
       where: {},
       sort: {},
@@ -144,8 +144,8 @@ class Query {
   }
 
   exec (callback) {
-    let sql = []
-    sql.push('select distinct ',  this.mapField(this.$query.distinct), ' from ')
+    let sql = [], distinct = this.$query.distinct ? this.$query.distinct : '_id'
+    sql.push('select distinct ',  this.mapField(distinct), ' from ')
     let tables = Object.keys(this.mapping.columns)
     let table = tables.shift()
     sql.push('`', table, '`')
@@ -162,7 +162,14 @@ class Query {
       sql.push(this.$query.limit)
     }
     return mongoose.connection.query(sql.join(''), data).then(result => {
-      console.log(sql.join(''), result)
+      let distinct = this.$query.distinct ? this.$query.distinct : '_id'
+      let field = this.mapping.mappings[distinct].field
+      result = result.map(element => element[field])
+      if (!this.$query.distinct) {
+        return this.$model.findById(result, this.$query.select)
+      }
+      callback && callback(null, result)
+      return mongoose.Promise.resolve(result)
     })
   }
 

@@ -24,6 +24,8 @@ class Model extends Document {
   }
 
   static findById (id, callback) {
+    console.log(arguments)
+    return
     let queries = SchemaUtil.document(this.schema().fields, this.collection())
     return mongoose.Promise.all(queries.map(query => {
       return mongoose.connection.query(query.sql, [id])
