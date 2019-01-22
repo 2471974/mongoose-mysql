@@ -5,15 +5,23 @@
  * 3.合并管道进行单次查询，不支持二次聚合（可能与业务预期结果不一致）
  */
 class Aggregate {
-    constructor (options, model) {
-        this.options = options
-        this.$model = model
-        this.mapping = model.mapping()
-    }
+  constructor (options, model) {
+    this.options = options
+    this.$model = model
+    this.mapping = model.mapping()
+  }
 
-    exec (callback) {
-
+  options () {
+    let options = {}
+    for (let index in this.options) {
+      options = Object.assign(options[index] || {}, this.options[index])
     }
+    return options
+  }
+
+  exec (callback) {
+    
+  }
 }
 
 export default Aggregate
