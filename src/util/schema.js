@@ -28,9 +28,13 @@ export default {
     if (typeof autoIndex !== 'undefined') {
       columns.push('autoId', 'autoIndex')
       values.push(undefined, autoIndex)
-    } else {
-      columns.push('_id')
-      values.push(null)
+    } else if(Object.prototype.toString.call(fields) === '[object Object]') {
+      if (Object.keys(fields).indexOf('_id') === -1) {
+        fields = Object.assign({_id: {type: Schema.Types.ObjectId}}, fields)
+      }
+      if (Object.keys(data).indexOf('_id') === -1) {
+        data = Object.assign({_id: null}, data)
+      }
     }
     tableName = this.table(tableName)
     autoIndex = this.index(autoIndex)

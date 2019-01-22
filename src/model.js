@@ -25,6 +25,10 @@ class Model extends Document {
 
   static remove(condition, callback) {
     return this.query().where(condition).distinct('_id').exec().then(result => {
+      if (result.length === 0) {
+        callback && callback(null, result.length)
+        return mongoose.Promise.resolve(result.length)
+      }
       return this.removeById(result, callback)
     }).catch(error => {
       return mongoose.Promise.reject(error)
@@ -66,7 +70,7 @@ class Model extends Document {
       mongoose.connection.rollback() // 回滚事务
       return mongoose.Promise.reject(error)
     }).then(result => {
-      callback && callback(null, result)
+      callback && callback(null, result.affectedRows)
       return mongoose.Promise.resolve(result.affectedRows)
     })
   }
