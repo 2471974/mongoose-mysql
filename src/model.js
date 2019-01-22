@@ -2,6 +2,7 @@ import SchemaUtil from './util/schema'
 import mongoose from './index'
 import Document from './document'
 import Query from './query'
+import Aggregate from './aggregate'
 
 /**
  * 静态模型
@@ -21,6 +22,14 @@ class Model extends Document {
 
   static query () {
     return new Query(this.model())
+  }
+
+  static aggregate (options, callback) {
+    if (!(options instanceof Array)) {
+      options = [].concat(arguments)
+      callback = null
+    }
+    return new Aggregate(options, this.model()).exec(callback)
   }
 
   static update (condition, doc, options, callback) {
