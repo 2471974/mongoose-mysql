@@ -22,7 +22,7 @@ class Query {
   }
 
   select (fields) {
-    this.$query.select.push(...fields.split(' ').map(item => {return item.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')}))
+    this.$query.select = fields
     return this
   }
 

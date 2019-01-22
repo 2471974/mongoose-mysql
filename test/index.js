@@ -107,7 +107,7 @@ let condition = {
 // Cat.remove({'_id': {'$lte': 3}}, (error, result) => {
 // 	console.log(error, result)
 // })
-Cat.update({_id: 99}, {f1: 'xxx'}, {}, (error, result) => {
+Cat.update({_id: 99}, {'$inc': {f5: 1}}, {new: true, select: {f5: 1}}, (error, result) => {
 	console.log(error, result)
 })
 console.log('Bye Bye!');

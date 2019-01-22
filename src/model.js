@@ -59,7 +59,35 @@ class Model extends Document {
           doc = {'$set': doc} // 增加更新标识
         }
       }
-      // 执行更新
+      let mapping = this.mapping()
+      let queries = [], tables = SchemaUtil.update(doc, mapping.mappings)
+      let tableName = Object.keys(mapping.tables).shift()
+      for (let index in mapping.tables) {
+        let table = tables[index]
+        if (!table) continue
+        let sql = []
+        sql.push('update `', index, '` set ', table.fields.join(', '))
+        sql.push(' where ', index === tableName ? '_id' : 'autoId')
+        sql.push(' in (', [].concat(ids).fill('?').join(', '), ')')
+        console.log(sql.join(''))
+        queries.push(mongoose.connection.query(sql.join(''), table.data.concat(ids)))
+      }
+      return mongoose.connection.beginTransaction().then(() => { // 启用事务
+        return mongoose.Promise.all(queries)
+      }).then(result => { // 提交事务
+        return mongoose.connection.commit()
+      }).catch(error => {
+        callback && callback(error)
+        mongoose.connection.rollback() // 回滚事务
+        return mongoose.Promise.reject(error)
+      }).then(result => {
+        if (options.new) {
+          return this.findById(options.multi ? ids : ids.shift(), options.select, callback)
+        } else {
+          callback && callback(null, ids.length)
+          return mongoose.Promise.resolve(ids.length)
+        }
+      })
     }).catch(error => {
       callback && callback(error)
       return mongoose.Promise.reject(error)
@@ -119,6 +147,72 @@ class Model extends Document {
     })
   }
 
+  static tables(fields, mapping) {
+    mapping || (mapping = this.mapping())
+    if (!fields) return mapping.tables
+    let isExclude = false
+    if (Object.prototype.toString.call(fields) !== '[object Object]') {
+      let doc = {}
+      fields.split(' ').forEach(item => {
+        item = item.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
+        if (item.indexOf('-') === 0) {
+          isExclude = true
+          Object.assign(doc, {[item.substring(1)]: -1})
+        } else if (item.indexOf('+') === 0) {
+          Object.assign(doc, {[item.substring(1)]: 1})
+        } else if(item !== '') {
+          Object.assign(doc, {[item]: 1})
+        }
+      })
+      fields = doc
+    } else {
+      for (let index in fields) {
+        if (fields[index] !== -1) continue
+        isExclude = true
+        break 
+      }
+    }
+    if (Object.keys(fields).length === 0) return mapping.tables
+    let tables = []
+    for (let field in fields) {
+      let item = mapping.mappings[field]
+      if (!item) throw 'can not mapping field with name ' + field
+      tables[item.table] || (tables[item.table] = [])
+      if (isExclude) {
+        if (fields[field] === -1) tables[item.table].push(item.field)
+      } else {
+        if (fields[field] !== -1) tables[item.table].push(item.field)
+      }
+    }
+    let tableName = Object.keys(mapping.tables)[0] // 主表
+    let result = {}
+    for (let index in mapping.tables) {
+      if (typeof tables[index] === 'undefined') {
+        if (isExclude) Object.assign(result, {[index]: mapping.tables[index]})
+        continue
+      }
+      let table = mapping.tables[index]
+      Object.assign(result, {[index]: {
+        columns: table.columns.filter(item => {
+          if (isExclude) {
+            return tables[index].indexOf(item) === -1
+          } else {
+            return tables[index].indexOf(item) !== -1
+          }
+        }),
+        maps: table.maps,
+        isArray: table.isArray
+      }})
+      if (index === tableName) {
+        result[index].columns.indexOf('_id') === -1 && result[index].columns.unshift('_id')
+      } else {
+        result[index].columns.indexOf('autoIndex') === -1 && result[index].columns.unshift('autoIndex')
+        result[index].columns.indexOf('autoId') === -1 && result[index].columns.unshift('autoId')
+      }
+    }
+    return result
+  }
+
   static findById (id, fields, callback) {
     if (typeof fields === 'function') {
       callback = fields
@@ -127,32 +221,7 @@ class Model extends Document {
     if (Object.prototype.toString.call(id) === '[object Object]') id = id._id
     let mapping = this.mapping()
     let tableName = Object.keys(mapping.tables)[0] // 主表
-    let selectFields = {} // 自定义查询字段
-    Array.from(new Set(fields ? fields : [])).map(item => {return mapping.mappings[item]}).forEach(item => {
-      selectFields[item.table] || (selectFields[item.table] = [])
-      selectFields[item.table].push(item.field)
-    })
-    let tables = {} // 带查询数据表
-    if (Object.keys(selectFields).length === 0) {
-      tables = Object.assign({}, mapping.tables)
-    } else {
-      for (let index in mapping.tables) {
-        if (typeof selectFields[index] === 'undefined') continue
-        if (index === tableName) {
-          selectFields[index].indexOf('_id') === -1 && selectFields[index].unshift('_id')
-        } else {
-          selectFields[index].indexOf('autoIndex') === -1 && selectFields[index].unshift('autoIndex')
-          selectFields[index].indexOf('autoId') === -1 && selectFields[index].unshift('autoId')
-        }
-        let table = mapping.tables[index]
-        Object.assign(tables, {[index]: {
-          columns: table.columns.filter(item => {return selectFields[index].indexOf(item) !== -1}),
-          maps: table.maps,
-          isArray: table.isArray
-        }})
-      }
-    }
-    let queries = [], ids = id instanceof Array ? id : [id]
+    let tables = this.tables(fields, mapping), queries = [], ids = id instanceof Array ? id : [id]
     for (let table in tables) {
       let sql = []
       sql.push('select ', tables[table].columns.map(item => {return '`' + item + '`'}).join(', '))

@@ -22,6 +22,43 @@ export default {
     }
     return fields
   },
+  update (data, mappings, parent) {
+    let result = {}
+    for (let key in data) {
+      let value = data[key]
+      if (key.indexOf('$') === 0) {
+        let r = this.update(value, mappings, key)
+        for (let index in r) {
+          if (result[index]) {
+            result[index].fields.push(...r[index].fields)
+            result[index].data.push(...r[index].data)
+          } else {
+            result[index] = r[index]
+          }
+        }
+        continue
+      }
+      let lparent = parent.toLowerCase(), lkey = mappings[key]
+      if (!lkey) throw 'can not mapping ' + key
+      let table = result[lkey.table] || (result[lkey.table] = {fields:[], data: []})
+      switch (lparent) {
+        case '$inc':
+          table.fields.push('`' + lkey.field + '`=`' + lkey.field + '` + ?')
+          table.data.push(value)
+          break;
+        case '$set':
+          table.fields.push('`' + lkey.field + '`=?')
+          table.data.push(value)
+          break;
+        case '$unset':
+          table.fields.push('`' + lkey.field + '`=null')
+          break;
+        default:
+          throw 'update operation ' + parent + ' is not supportted on field with name ' + key
+      }
+    }
+    return result
+  },
   insert (fields, data, tableName, autoIndex) {
     fields = this.fieldsArrayType(fields)
     let result = [], columns = [], values = []
