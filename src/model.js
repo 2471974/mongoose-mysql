@@ -23,6 +23,49 @@ class Model extends Document {
     return new Query(this.model())
   }
 
+  static update (condition, doc, options, callback) {
+    if (typeof options === 'function') {
+      callback = options
+      options = null
+    }
+    options = Object.assign({
+      upsert: false, // 如果查询记录不存在则直接插入
+      multi: false, // 更新全部匹配到的文档
+      overwrite: false, // 覆盖模式，默认为局部更新
+      new: false, // 返回更新后的文档
+      select: null // 返回文档的字段
+    }, options || {})
+    return this.query().where(condition).distinct('_id').exec().then(ids => {
+      if (ids.length === 0) { // 没有匹配记录
+        if (options.upsert) { // 执行插入
+          return this.save(doc, callback)
+        } else { // 返回受影响条数
+          callback && callback(null, ids.length)
+          return mongoose.Promise.resolve(ids.length)
+        }
+      }
+      if (!options.multi) ids = [ids[0]] // 单记录更新
+      if (options.overwrite) { // 覆盖模式
+        let promise = this.removeById(ids) // 删除原记录
+        ids.forEach(id => { // 插入新记录
+          promise = promise.then(() => {this.save(Object.assign({_id: id}, doc))})
+        })
+        return promise.then(() => { // 返回插入记录行数
+          callback && callback(null, ids.length)
+          return mongoose.Promise.resolve(ids.length)
+        })
+      } else { // 局部更新模式
+        if (Object.keys(doc).filter(key => {return key.indexOf('$') === 0}).length === 0) {
+          doc = {'$set': doc} // 增加更新标识
+        }
+      }
+      // 执行更新
+    }).catch(error => {
+      callback && callback(error)
+      return mongoose.Promise.reject(error)
+    })
+  }
+
   static remove(condition, callback) {
     return this.query().where(condition).distinct('_id').exec().then(result => {
       if (result.length === 0) {
@@ -31,6 +74,7 @@ class Model extends Document {
       }
       return this.removeById(result, callback)
     }).catch(error => {
+      callback && callback(error)
       return mongoose.Promise.reject(error)
     })
   }
