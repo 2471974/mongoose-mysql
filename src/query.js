@@ -126,6 +126,10 @@ class Query {
           where.push(this.mapField(parent) + ' < ?')
           data.push(value)
           break
+        case '$regex':
+          where.push(this.mapField(parent) + ' like ?')
+          data.push('%' + value.toString() + '%')
+          break
         case '$and':
         case '$or':
           let children = []
