@@ -99,9 +99,9 @@ class Aggregate {
     if (!lookup) return subquery
     let model = mongoose.modelByCollection(lookup.from)
     let ta = this.tableName(), tb = this.tableName()
-    let sql = ['select * from (', subquery, ') as `', ta, '` join (']
+    let sql = ['select * from (', subquery, ') as `', ta, '` left join (']
     sql.push(this.baseQuery(model.mapping(), lookup.as), ') as `', tb, '` on ')
-    sql.push('`', ta, '`.`', lookup.localField, '` = `', tb, '`.`', lookup.foreignField, '`')
+    sql.push('`', ta, '`.`', lookup.localField, '` = `', tb, '`.`', lookup.as, '.', lookup.foreignField, '`')
     return sql.join('')
   }
 
