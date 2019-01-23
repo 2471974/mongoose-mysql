@@ -13,6 +13,11 @@ class Aggregate {
       buildOrder: query.buildOrder,
       mapField (field) {return '`' + field + '`'}
     }
+    this.$tableIndex = 0
+  }
+
+  tableName () {
+    return 't_' + ++this.$tableIndex
   }
 
   buildProject (project) {
@@ -53,7 +58,7 @@ class Aggregate {
     let project = []
     for (let index in mapping.mappings) {
       let item = mapping.mappings[index]
-      prefix && {index = prefix + '.' + index}
+      prefix && (index = prefix + '.' + index)
       project.push(["`", item.table, "`.`", item.field, "` as '", index.replace("'", ""), "'"].join(''))
     }
     let sql = ["select ", project.join(', '), " from "]
@@ -67,9 +72,10 @@ class Aggregate {
   }
 
   buildQuery (options, subquery, data) {
+    subquery = this.buildLookup(options.$lookup, subquery)
     let project = this.buildProject(options.$project)
     let sql = ["select ", project.length > 0 ? project.join(', ') : "*", " from "]
-    sql.push("(", subquery, ")")
+    sql.push("(", subquery, ") as `", this.tableName(), "`")
     let result = this.$query.buildWhere(options.$match || {})
     result.where && sql.push(' where ', result.where)
     data.push(...result.data)
@@ -84,7 +90,7 @@ class Aggregate {
   }
 
   buildGroup (group, subquery, data) {
-    if (!group) return {subquery, data}
+    if (!group) return {sql: subquery, data}
     let sql = []
     return {sql, data}
   }
@@ -92,13 +98,15 @@ class Aggregate {
   buildLookup(lookup, subquery) {
     if (!lookup) return subquery
     let model = mongoose.modelByCollection(lookup.from)
-
+    let ta = this.tableName(), tb = this.tableName()
+    let sql = ['select * from (', subquery, ') as `', ta, '` join (']
+    sql.push(this.baseQuery(model.mapping(), lookup.as), ') as `', tb, '` on ')
+    sql.push('`', ta, '`.`', lookup.localField, '` = `', tb, '`.`', lookup.foreignField, '`')
     return sql.join('')
   }
 
   exec (callback) {
     let sql = this.baseQuery(this.mapping), data = []
-    sql = this.buildLookup(sql)
     this.options.forEach(option => {
       let result = this.buildQuery(option, sql, data)
       sql = result.sql
