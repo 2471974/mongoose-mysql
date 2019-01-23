@@ -20,8 +20,9 @@ class Aggregate {
     return 't_' + ++this.$tableIndex
   }
 
-  buildProject (project) {
-    let result = []
+  buildProject (project, prefix) {
+    let result = {}
+    if (!project) return result
     for (let index in project) {
       let value = project[index]
       if (Object.prototype.toString.call(value) === '[object Object]') {
@@ -49,7 +50,8 @@ class Aggregate {
       } else if (value.indexOf('$') === 0) {
         value = '`' + value.substring(1) + '`'
       }
-      result.push(value + " as '" + index.replace("'", "") + "'")
+      prefix && (index = prefix + '.' + index)
+      Object.assign(result, {[index]: value + " as '" + index.replace("'", "") + "'"})
     }
     return result
   }
@@ -74,8 +76,8 @@ class Aggregate {
   buildQuery (options, subquery, data) {
     subquery = this.buildLookup(options.$lookup, subquery)
     let project = this.buildProject(options.$project)
-    let sql = ["select ", project.length > 0 ? project.join(', ') : "*", " from "]
-    sql.push("(", subquery, ") as `", this.tableName(), "`")
+    let sql = ["select ", Object.keys(project).length > 0 ? Object.values(project).join(', ') : "*"]
+    sql.push( " from (", subquery, ") as `", this.tableName(), "`")
     let result = this.$query.buildWhere(options.$match || {})
     result.where && sql.push(' where ', result.where)
     data.push(...result.data)
@@ -89,10 +91,109 @@ class Aggregate {
     return this.buildGroup(options.$group, sql.join(''), data)
   }
 
+  /**
+   * 构造功能函数的判断条件，与buildWhere的格式相反
+   */
+  buildCondition (condition) {
+    if (Object.keys(condition).length === 0) return {where: null, data: []}
+    let where = [], data = []
+    for (let key in condition) {
+      let value = condition[key]
+      let lkey = key.toLowerCase()
+      switch (lkey) {
+        case '$ne':
+          where.push('`' + value[0].substring(1) + '` != ?')
+          data.push(value[1])
+          break
+        case '$gte':
+          where.push('`' + value[0].substring(1) + '` >= ?')
+          data.push(value[1])
+          break
+        case '$gt':
+          where.push('`' + value[0].substring(1) + '` > ?')
+          data.push(value[1])
+          break
+        case '$lte':
+          where.push('`' + value[0].substring(1) + '` <= ?')
+          data.push(value[1])
+          break
+        case '$lt':
+          where.push('`' + value[0].substring(1) + '` < ?')
+          data.push(value[1])
+          break
+        case '$and':
+        case '$or':
+          let children = []
+          value.forEach(element => {
+            let result = this.buildWhere(element, key)
+            if (!result.where) return
+            children.push(result.where)
+            data.push(...result.data)
+          })
+          children.length > 0 && where.push('(' + children.join(key === '$and' ? ' and ' : ' or ') + ')')
+          break
+        default:
+          if (value instanceof RegExp) {
+            where.push(this.mapField(key) + ' like ?')
+            data.push('%' + value.toString() + '%')
+          } else {
+            where.push(this.mapField(key) + ' = ?')
+            data.push(value)
+          }
+      }
+    }
+    return {where: where.join(' and '), data}
+  }
+
   buildGroup (group, subquery, data) {
     if (!group) return {sql: subquery, data}
-    let sql = []
-    return {sql, data}
+    let sql = [], project = this.buildProject(group._id, '_id')
+    let groupKeys = Object.keys(project)
+    for (let key in group) {
+      if (key === '_id') continue
+      let value = group[key]
+      let fn = Object.keys(value)[0].toLowerCase()
+      value = Object.values(value)[0]
+      switch (fn) {
+        case '$sum':
+        case '$max':
+        case '$min':
+        case '$avg':
+          let fnName = fn.substring(1)
+          if (Object.prototype.toString.call(value) === '[object Object]') { // 功能
+            fn = Object.keys(value)[0].toLowerCase()
+            value = Object.values(value)[0]
+            switch (fn) {
+              case '$add':
+                value = fnName + '(' + value.map(item => {
+                  return item.toString().indexOf('$') === 0 ? ('`' + item.substring(1) + '`') : item
+                }).join('+') + ')'
+                break
+              case '$cond':
+                let result = this.buildCondition(value[0])
+                value = fnName + '(if(' + result.where + ', ' + value[1] + ', ' + value[2] + '))'
+                break
+              default:throw 'unsupported group sub function ' + fn + ' on field ' + key
+            }
+          } else if(value.toString().indexOf('$') === 0) { // 字段
+            value = fnName + '(`' + value.substring(1) + '`)'
+          } else { // 数值
+            value = fnName + '(' + value + ')'
+          }
+          break;
+        case '$first':
+        case '$last':
+          break
+        default:throw 'unsupported group function ' + fn + ' on field ' + key
+      }
+      Object.assign(project, {[key]: value + " as '" + key.replace("'", "") + "'"})
+    }
+    sql.push('select ', Object.keys(project).length > 0 ? Object.values(project).join(', ') : '*')
+    sql.push(' from (', subquery, ') as `', this.tableName(), '`')
+    if (groupKeys.length > 0) {
+      sql.push(' group by ', groupKeys.map(key => {return '`' + key + '`'}).join(', '))
+    }
+    return {sql: sql.join(''), data}
   }
 
   buildLookup(lookup, subquery) {
