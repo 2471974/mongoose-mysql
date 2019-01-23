@@ -117,7 +117,8 @@ let condition = {
 Cat.aggregate([{
 	'$group': {
 		_id: {f1: 1, f5: 1},
-		ct: {$sum: {$add: ['$f5', 10]}}
+		ct: {$sum: {$add: ['$f5', 10]}},
+		f1: {$first: '$f1'}
 	}
 }], (error, result) => {console.log(error, result)})
 console.log('Bye Bye!');

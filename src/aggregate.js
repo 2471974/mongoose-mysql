@@ -181,8 +181,8 @@ class Aggregate {
             value = fnName + '(' + value + ')'
           }
           break;
-        case '$first':
-        case '$last':
+        case '$first': // MySQL always return the first record in grouping
+          value = '`' + value.substring(1) + '`'
           break
         default:throw 'unsupported group function ' + fn + ' on field ' + key
       }
