@@ -1,9 +1,6 @@
 import mongoose from './index'
 /**
- * 仅支持单个集合的聚合操作
- * 1.子文档数组默认按照unwind方式进行查询，忽略查询语句中的unwind指令
- * 2.不支持多个集合的聚合查询，使用lookup指令会抛出异常
- * 3.二次聚合以子查询方式进行，可对调用方式进行适当优化
+ * 子文档数组默认按照unwind方式进行查询，忽略查询语句中的unwind指令
  */
 class Aggregate {
   constructor (options, model) {
@@ -52,10 +49,11 @@ class Aggregate {
     return result
   }
 
-  baseQuery (mapping) {
+  baseQuery (mapping, prefix) {
     let project = []
     for (let index in mapping.mappings) {
       let item = mapping.mappings[index]
+      prefix && {index = prefix + '.' + index}
       project.push(["`", item.table, "`.`", item.field, "` as '", index.replace("'", ""), "'"].join(''))
     }
     let sql = ["select ", project.join(', '), " from "]
@@ -91,8 +89,16 @@ class Aggregate {
     return {sql, data}
   }
 
+  buildLookup(lookup, subquery) {
+    if (!lookup) return subquery
+    let model = mongoose.modelByCollection(lookup.from)
+
+    return sql.join('')
+  }
+
   exec (callback) {
     let sql = this.baseQuery(this.mapping), data = []
+    sql = this.buildLookup(sql)
     this.options.forEach(option => {
       let result = this.buildQuery(option, sql, data)
       sql = result.sql

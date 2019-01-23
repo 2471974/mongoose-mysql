@@ -20,6 +20,14 @@ class Mongoose {
     this.connection.close()
   }
 
+  modelByName (name) {
+    return this.$models[name]
+  }
+
+  modelByCollection (name) {
+    return this.$models[this.$collections[name]]
+  }
+
   model (name, schema) {
     let instance = this
     if (!(schema instanceof Schema)) schema = new Schema(schema, {collection: name})
