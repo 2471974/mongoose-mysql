@@ -11,7 +11,7 @@ class Query {
       order: {},
       skip: -1,
       limit: -1,
-      populate: {}
+      populate: []
     }
     this.mapping = model.mapping()
   }
@@ -60,7 +60,10 @@ class Query {
   }
 
   populate (options) {
-    this.$query.populate = options
+    if (!(options instanceof Array)) options = [options]
+    this.$query.populate = options.map(item => {
+      return Object.prototype.toString.call(item) === '[object Object]' ? item : {path: item}
+    })
     return this
   }
 
@@ -192,11 +195,45 @@ class Query {
       let field = this.mapping.mappings[distinct].field
       result = result.map(element => element[field])
       if (!this.$query.distinct) {
-        return this.$model.findById(result, this.$query.select, callback)
+        return this.$model.findById(result, this.$query.select).then(result => {
+          return this.fillPopulate(result, this.$query.populate, callback)
+        })
       }
       callback && callback(null, result)
       return mongoose.Promise.resolve(result)
     })
+  }
+
+  async fillPopulate (data, populate, callback) {
+    if (!populate || populate.length === 0) {
+      callback && callback(null, data)
+      return mongoose.Promise.resolve(data)
+    }
+    let idMap = {} // 构造待查询映射
+    populate.forEach(item => Object.assign(idMap, {[item.path]: Object.assign({}, item, {ids: [], data: {}})}))
+    data.forEach(item => { // 获取待查询主键
+      for (let index in idMap) {
+        idMap[index].ids.push(item[index])
+      }
+    })
+    for (let index in idMap) { // 执行查询
+      let map = idMap[index]
+      let ids = Array.from(new Set(map.ids)).filter(item => {return item > 0})
+      if (ids.length === 0) continue
+      let model = mongoose.modelByName(map.model ? map.model : this.$model.schema().fields[index].ref)
+      let result  = await model.findById(ids, map.select)
+      result.forEach(item => {
+        map.data[item._id] = item
+      })
+    }
+    data.forEach(item => { // 填充记录
+      for (let index in idMap) {
+        let map = idMap[index]
+        Object.assign(item, {[map.path]: map.data[item[index]]})
+      }
+    })
+    callback && callback(null, data)
+    return mongoose.Promise.resolve(data)
   }
 
   async cursor () {

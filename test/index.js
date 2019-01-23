@@ -1,6 +1,7 @@
 const config = require('./config')
 var mongoose = require('../index');
 var Stringify = mongoose.Schema.Formatter.Stringify
+var ObjectId = mongoose.Schema.Types.ObjectId
 
 mongoose.connect(config.mysql, { useMongoClient: true });
 
@@ -36,7 +37,8 @@ var CatSchema = new mongoose.Schema({
 		f11d: {
 			f11d1: String
 		}
-	}]
+	}],
+	f12 : {type: ObjectId, ref: 'Cat'}
 }, {collection: 'cat'})
 
 var Cat = mongoose.model('Cat', CatSchema);
@@ -52,7 +54,7 @@ var kitty = new Cat({
 	}, {
 		f4c1: 'f4c1-2'
 	}],
-	f5: 1224,
+	f5: Math.random() * 100,
 	f6: new Date(),
 	f7: ['f7-1', 'f7-2'],
 	f8: {
@@ -74,7 +76,8 @@ var kitty = new Cat({
 		f11d: {
 			f11d1: 'f11d1-sss'
 		}
-	}]
+	}],
+	f12: Math.random() * 1000 + 1
 });
 
 // console.log(Cat.ddl(true).join('\n'))
@@ -114,11 +117,13 @@ let condition = {
 // 	'$project': {f1: 1, f6: {'$month': '$f6'}, fg: '$lkp.f1'},
 // 	'$lookup': {from: 'cat', localField: 'f5', foreignField: '_id', as:  'lkp'}
 // }], (error, result) => {console.log(error, result)})
-Cat.aggregate([{
-	'$group': {
-		_id: {f1: 1, f5: 1},
-		ct: {$sum: {$add: ['$f5', 10]}},
-		f1: {$first: '$f1'}
-	}
-}], (error, result) => {console.log(error, result)})
+// Cat.aggregate([{
+// 	'$group': {
+// 		_id: {f1: 1, f5: 1},
+// 		ct: {$sum: {$add: ['$f5', 10]}},
+// 		f1: {$first: '$f1'}
+// 	}
+// }], (error, result) => {console.log(error, result)})
+Cat.query().select('f1 f5 f10.f10c1 f12').populate({path: 'f12', select: 'f1'})
+	.where({_id: 6}).exec(function (err, result) {console.log(err, result)})
 console.log('Bye Bye!');
