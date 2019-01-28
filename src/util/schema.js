@@ -253,6 +253,8 @@ export default {
           } else if (value.type === Date) {
             // sql.push("`", field, "` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,")
             sql.push("`", field, "` datetime NULL,")
+          } else if (value.type === Schema.Types.ObjectId) {
+            sql.push("`", field, "` int(11) NULL,")
           } else {
             throw 'schema has not supported field [' + field + '] with type [' + dataType + '] in ' + JSON.stringify(fields)
           }

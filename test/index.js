@@ -79,16 +79,11 @@ var kitty = new Cat({
 	}],
 	f12: Math.random() * 1000 + 1
 });
+// console.log(JSON.stringify(Cat.schema().fields))
+// console.log(Cat.ddl(false).join('\n'))
 
-// console.log(Cat.ddl(true).join('\n'))
+// kitty.save(function (err, doc) {console.log(err, doc)});
 
-// kitty.save(function (err, doc) {
-//   if (err) {
-//     console.log(err);
-//   } else {
-//     console.log(doc);
-//   }
-// });
 let condition = {
 	"f5": {"$in": ["1", "2", "3", "5"]},
 	"f1": "1",
