@@ -248,6 +248,8 @@ export default {
         default:
           if (value.type === String) {
             sql.push("`", field, "` varchar(255) NULL,")
+          } else if (value.type === Boolean) {
+            sql.push("`", field, "` tinyint(4) NULL,")
           } else if (value.type === Number) {
             sql.push("`", field, "` double NULL,")
           } else if (value.type === Date) {
@@ -256,7 +258,7 @@ export default {
           } else if (value.type === Schema.Types.ObjectId) {
             sql.push("`", field, "` int(11) NULL,")
           } else {
-            throw 'schema has not supported field [' + field + '] with type [' + dataType + '] in ' + JSON.stringify(fields)
+            throw 'schema [' + tableName + '] has not supported field [' + field + '] with type [' + dataType + '] in ' + JSON.stringify(fields)
           }
       }
     }
