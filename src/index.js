@@ -30,7 +30,8 @@ class Mongoose {
 
   model (name, schema) {
     let instance = this
-    if (!(schema instanceof Schema)) schema = new Schema(schema, {collection: name})
+    if (!(schema instanceof Schema)) schema = new Schema(schema)
+    schema.options.collection || Object.assign(schema.options, {collection: name.toLowerCase() + 's'})
     let collection = schema.options.collection
     let model = class extends Model {
       static name () {return name}
