@@ -22,6 +22,7 @@ class Connection {
     })
   }
   beginTransaction () {
+    if (!mongoose.withTransaction) return mongoose.Promise.resolve()
     return new mongoose.Promise((resolve, reject) => {
       let params = Array.from(arguments)
       params.push(error => error ? reject(error) : resolve())
@@ -29,6 +30,7 @@ class Connection {
     })
   }
   commit () {
+    if (!mongoose.withTransaction) return mongoose.Promise.resolve()
     return new mongoose.Promise((resolve, reject) => {
       let params = Array.from(arguments)
       params.push(error => error ? reject(error) : resolve())
@@ -36,6 +38,7 @@ class Connection {
     })
   }
   rollback () {
+    if (!mongoose.withTransaction) return mongoose.Promise.resolve()
     return new mongoose.Promise((resolve, reject) => {
       let params = Array.from(arguments)
       params.push(error => error ? reject(error) : resolve())
