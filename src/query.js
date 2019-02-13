@@ -6,7 +6,7 @@ class Query {
     this.$model = model
     this.$query = {
       distinct: null,
-      select: [],
+      select: null,
       where: {},
       order: {},
       skip: -1,
