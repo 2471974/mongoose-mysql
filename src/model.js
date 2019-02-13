@@ -78,7 +78,6 @@ class Model extends Document {
         sql.push('update `', index, '` set ', table.fields.join(', '))
         sql.push(' where ', index === tableName ? '_id' : 'autoId')
         sql.push(' in (', [].concat(ids).fill('?').join(', '), ')')
-        console.log(sql.join(''))
         queries.push(mongoose.connection.query(sql.join(''), table.data.concat(ids)))
       }
       return mongoose.connection.beginTransaction().then(() => { // 启用事务
