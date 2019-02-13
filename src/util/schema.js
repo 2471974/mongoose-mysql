@@ -48,7 +48,7 @@ export default {
           break;
         case '$set':
           table.fields.push('`' + lkey.field + '`=?')
-          table.data.push(value)
+          table.data.push(lkey.map ? lkey.map(value) : value)
           break;
         case '$unset':
           table.fields.push('`' + lkey.field + '`=null')
@@ -139,7 +139,7 @@ export default {
                 data[field] = JSON.parse(data[field])
                 return data
               })
-              Object.assign(mappings, {[this.index(autoIndex, field)]: {table: tableName, field}})
+              Object.assign(mappings, {[this.index(autoIndex, field)]: {table: tableName, field, map: data => {return JSON.stringify(data)}}})
             } else {
               let r = this.mapping(value.type, this.table(tableName, field), dataType === '[object Object]' ? this.index(autoIndex, field) : this.index(autoIndex, field, '$'))
               Object.assign(result.tables, r.tables)
