@@ -237,6 +237,7 @@ class Query {
   }
 
   async cursor () {
+    // TODO:
     let result = await this.exec()
     return result[Symbol.iterator]()
   }

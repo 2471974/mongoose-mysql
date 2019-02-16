@@ -3,6 +3,12 @@ import mongoose from './index'
 
 class Connection {
   constructor () {}
+  on (action, callback) {
+    // TODO:
+  }
+  once (action, callback) {
+    // TODO:
+  }
   open (config) {
     return new mongoose.Promise((resolve, reject) => {
       this.connection = mysql.createConnection(config)

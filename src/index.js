@@ -1,6 +1,7 @@
 import Schema from './schema'
 import Model from './model'
-import Connection from './connection';
+import Connection from './connection'
+import Error from './error'
 
 class Mongoose {
 
@@ -10,6 +11,7 @@ class Mongoose {
     this.$collections = {} // 集合与模型名称的映射
     this.$models = {} // 模型名称与模型类的映射
     this.withTransaction = true // 启用事务
+    this.Error = Error
   }
 
   connect (config) {

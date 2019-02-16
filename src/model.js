@@ -20,6 +20,10 @@ class Model extends Document {
     return new (this.model())(doc)
   }
 
+  static find () {
+    // TODO:
+  }
+
   static query () {
     return new Query(this.model())
   }

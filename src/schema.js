@@ -1,5 +1,5 @@
 import SchemaUtil from './util/schema'
-
+// TODO:
 class Schema {
 
   constructor (fields, options) {
@@ -7,8 +7,37 @@ class Schema {
     this.options = options || {}
   }
 
+  get methods() {
+    return {}
+  }
+
+  set methods(data) {
+  }
+
+  get statics() {
+    return {}
+  }
+
+  set statics(data) {
+  }
+
   plugin (options) {
 
+  }
+
+  pre (action, callback) {
+
+  }
+
+  virtual (name) {
+    return {
+      get (callback) {
+
+      },
+      set (callback) {
+
+      }
+    }
   }
 
 }
