@@ -1,5 +1,6 @@
 const config = require('./config')
 var mongoose = require('../index');
+var co = require('co');
 var Stringify = mongoose.Schema.Formatter.Stringify
 var ObjectId = mongoose.Schema.Types.ObjectId
 
@@ -119,6 +120,10 @@ let condition = {
 // 		f1: {$first: '$f1'}
 // 	}
 // }], (error, result) => {console.log(error, result)})
-Cat.query().select('f1 f5 f10.f10c1 f12').populate({path: 'f12', select: 'f1'})
-	.where({_id: 6}).exec(function (err, result) {console.log(err, result)})
+// Cat.query().select('f1 f5 f10.f10c1 f12').populate({path: 'f12', select: 'f1'})
+// 	.where({_id: 6}).exec(function (err, result) {console.log(err, result)})
+co(function *(){
+	let result = yield Cat.query().where({_id: 6})
+	console.log(result)
+})
 console.log('Bye Bye!');

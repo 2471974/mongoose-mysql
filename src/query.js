@@ -16,6 +16,13 @@ class Query {
     this.mapping = model.mapping()
   }
 
+  /**
+   * @see(https://github.com/Automattic/mongoose/issues/2297)
+   */
+  then (resolve, reject) {
+    this.exec().then(resolve, reject)
+  }
+
   distinct (field) {
     this.$query.distinct = field
     return this
