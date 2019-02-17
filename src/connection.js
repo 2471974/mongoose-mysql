@@ -2,13 +2,26 @@ import mysql from 'mysql'
 import mongoose from './index'
 
 class Connection {
-  constructor () {}
+  constructor () {
+    // this.db = {
+    //   collection (name) {
+    //     return mongoose.modelByCollection(name)
+    //   }
+    // }
+  }
+
   on (action, callback) {
     // TODO:
   }
+
   once (action, callback) {
     // TODO:
   }
+
+  collection (name) {
+    return mongoose.modelByCollection(name)
+  }
+
   open (config) {
     return new mongoose.Promise((resolve, reject) => {
       this.connection = mysql.createConnection(config)

@@ -44,9 +44,9 @@ class Query {
         order[field] = order[field] === 1 ? 1 : -1
       }
     } else {
-      if (order.indexof('-') === 0) {
+      if (order.indexOf('-') === 0) {
         order = {[order.substr(1)]: -1}
-      } else if (order.indexof('+') === 0) {
+      } else if (order.indexOf('+') === 0) {
         order = {[order.substr(1)]: 1}
       } else {
         order = {order: 1}
