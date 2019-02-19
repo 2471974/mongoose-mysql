@@ -12,10 +12,11 @@ class Mongoose {
     this.$models = {} // 模型名称与模型类的映射
     this.withTransaction = true // 启用事务
     this.Error = Error
+    this.connection = new Connection()
+    this.Types = Schema.Types
   }
 
   connect (config) {
-    this.connection = new Connection()
     this.connection.open(config)
   }
 
