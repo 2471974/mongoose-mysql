@@ -241,9 +241,13 @@ class Model extends Document {
       fields = null
     }
     if (Object.prototype.toString.call(id) === '[object Object]') id = id._id
+    let ids = id instanceof Array ? id : [id]
+    if (ids.length < 1) {
+      return mongoose.Promise.resolve(id instanceof Array ? [] : null)
+    }
     let mapping = this.mapping()
     let tableName = Object.keys(mapping.tables)[0] // 主表
-    let tables = this.tables(fields, mapping), queries = [], ids = id instanceof Array ? id : [id]
+    let queries = [], tables = this.tables(fields, mapping)
     for (let table in tables) {
       let sql = []
       sql.push('select ', tables[table].columns.map(item => {return '`' + item + '`'}).join(', '))

@@ -243,10 +243,26 @@ class Query {
     return mongoose.Promise.resolve(data)
   }
 
-  async cursor () {
-    // TODO:
-    let result = await this.exec()
-    return result[Symbol.iterator]()
+  cursor () {
+    return new Cursor(this)
+  }
+}
+
+class Cursor {
+  constructor(query) {
+    this.skip = query.$query.skip
+    this.limit = query.$query.limit
+    this.skip < 0 && (this.skip = 0)
+    this.limit > 0 && (this.limit += this.skip)
+    this.query = query
+  }
+
+  async next() {
+    if (this.limit > 0 && this.skip >= this.limit) return null
+    this.query.skip(this.skip++)
+    this.query.limit(1)
+    let result = await this.query.exec()
+    return result.shift()
   }
 }
 

@@ -123,7 +123,11 @@ let condition = {
 // Cat.query().select('f1 f5 f10.f10c1 f12').populate({path: 'f12', select: 'f1'})
 // 	.where({_id: 6}).exec(function (err, result) {console.log(err, result)})
 co(function *(){
-	let result = yield Cat.query().where({_id: 6})
-	console.log(result)
+	// let result = yield Cat.query().where({_id: 6})
+	// console.log(result)
+	const cursor = Cat.find({_id: {'$in': [6, 9, 10]}}).limit(5).cursor();
+	for (let doc = yield cursor.next(); doc != null; doc = yield cursor.next()) {
+			console.log(doc._id)
+	}
 })
 console.log('Bye Bye!');
