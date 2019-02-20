@@ -9,6 +9,8 @@ class Schema {
     this.plugins = []
     this.methods = {}
     this.statics = {}
+    this.virtuals = {}
+    this.virtual('id').get(() => {return this._id})
   }
 
   static (name, fn) {
@@ -61,17 +63,29 @@ class Schema {
 
   }
 
-  virtual (name) {
-    return {
-      get (callback) {
-
-      },
-      set (callback) {
-
-      }
-    }
+  virtual (name, options) {
+    return this.virtuals[name] = new VirtualType(name, options)
   }
 
+}
+
+class VirtualType {
+  constructor (name, options) {
+    this.name = name
+    this.options = options
+    this.getter = () => {
+      return this[name]
+    }
+    this.getter = (val) => {
+      this[name] = val
+    }
+  }
+  get (fn) {
+    this.getter = fn
+  }
+  set (fn) {
+    this.setter = fn
+  }
 }
 
 Schema.Types = class {

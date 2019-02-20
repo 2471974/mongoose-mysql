@@ -17,10 +17,24 @@ class Model extends Document {
   }
 
   static new (doc) {
-    let c = class extends this.model() {}
-    Object.assign(c, c.schema().statisc)
-    Object.assign(c.prototype, c.schema().methods)
-    return new c(doc)
+    let schema = this.model().schema()
+    let cls = class extends this.model() {}
+    Object.assign(cls, schema.statisc)
+    Object.assign(cls.prototype, schema.methods)
+    let instance = new cls(doc)
+    for (let name in schema.virtuals) {
+      let vt = schema.virtuals[name]
+      Object.defineProperty(instance, name, {
+        get () {
+          return vt.getter.bind(this)()
+        },
+        set (val) {
+          return vt.setter.bind(this)(val)
+        }
+      })
+    }
+    console.log(instance._id, instance.id)
+    return instance
   }
 
   static find (conditions, projection, options, callback) {
@@ -46,7 +60,7 @@ class Model extends Document {
       callback = options
       options = null
     }
-    options = Object.assign({}, options ? options : {}, {scalar: true})
+    options = Object.assign({}, options ? options : {}, {multi: false})
     return this.find(conditions, projection, options, callback)
   }
 
@@ -62,6 +76,15 @@ class Model extends Document {
     return new Aggregate(options, this.model()).exec(callback)
   }
 
+  static findByIdAndUpdate (id, update, options, callback) {
+    return this.findOneAndUpdate({_id: id}, update, options, callback)
+  }
+
+  static findOneAndUpdate (conditions, update, options, callback) {
+    options = Object.assign({}, options || {}, {multi: false, new: true})
+    return this.update(conditions, update, options, callback)
+  }
+
   static update (condition, doc, options, callback) {
     if (typeof options === 'function') {
       callback = options
@@ -74,7 +97,8 @@ class Model extends Document {
       new: false, // 返回更新后的文档
       select: null // 返回文档的字段
     }, options || {})
-    return this.query().where(condition).distinct('_id').exec().then(ids => {
+    return this.query().options(options).where(condition).distinct('_id').exec().then(ids => {
+      if (!options.multi) ids = ids ? [ids] : [] // 单记录更新，转成数组处理
       if (ids.length === 0) { // 没有匹配记录
         if (options.upsert) { // 执行插入
           return this.save(doc, callback)
@@ -83,7 +107,6 @@ class Model extends Document {
           return mongoose.Promise.resolve(ids.length)
         }
       }
-      if (!options.multi) ids = [ids[0]] // 单记录更新
       if (options.overwrite) { // 覆盖模式
         let promise = this.removeById(ids) // 删除原记录
         ids.forEach(id => { // 插入新记录

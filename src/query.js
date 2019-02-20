@@ -13,12 +13,12 @@ class Query {
       limit: -1,
       populate: []
     }
-    this.$options = {}
+    this.$options = this.options()
     this.mapping = model.mapping()
   }
 
   options (opts) {
-    this.$options = opts ? opts : {}
+    this.$options = Object.assign({multi: true}, opts || {})
     return this
   }
 
@@ -209,7 +209,7 @@ class Query {
       let distinct = this.$query.distinct ? this.$query.distinct : '_id'
       let field = this.mapping.mappings[distinct].field
       result = result.map(element => element[field])
-      this.$options.scalar && (result = result.shift())
+      !this.$options.multi && (result = result.shift())
       if (!this.$query.distinct) {
         return this.$model.findById(result, this.$query.select).then(result => {
           return this.fillPopulate(result, this.$query.populate, callback)
@@ -264,7 +264,7 @@ class Cursor {
     this.limit = query.$query.limit
     this.skip < 0 && (this.skip = 0)
     this.limit > 0 && (this.limit += this.skip)
-    this.query = query.options({scalar: true})
+    this.query = query.options({multi: false})
   }
 
   next() {
