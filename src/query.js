@@ -49,7 +49,7 @@ class Query {
       } else if (order.indexOf('+') === 0) {
         order = {[order.substr(1)]: 1}
       } else {
-        order = {order: 1}
+        order = {[order]: 1}
       }
     }
     this.$query.order = order
@@ -175,7 +175,9 @@ class Query {
 
   mapField (field) {
     let mapping = this.mapping.mappings[field]
-    if (!mapping) throw this.$model.name() + '.' + field + ' can not be mapped ' + JSON.stringify(this.$query)
+    if (!mapping) {
+      throw this.$model.name() + '.' + field + ' can not be mapped ' + JSON.stringify(this.$query)
+    }
     return ['`', mapping.table, '`.`', mapping.field, '`'].join('')
   }
 
