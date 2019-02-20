@@ -1,4 +1,5 @@
 import SchemaUtil from './util/schema'
+import mongoose from './index'
 // TODO:
 class Schema {
 
@@ -6,34 +7,33 @@ class Schema {
     this.fields = SchemaUtil.optimizeObject(fields)
     this.options = options || {}
     this.plugins = []
-    this.debug = true
   }
 
   static (name, fn) {
-    this.debug && console.log('Schema.static()', arguments)
+    mongoose.debug && console.log('Schema.static()', arguments)
     Schema[name] = fn
     return this
   }
 
   method (name, fn) {
-    this.debug && console.log('Schema.method()', arguments)
+    mongoose.debug && console.log('Schema.method()', arguments)
     this[name] = fn
     return this
   }
 
   index (options) {
-    this.debug && console.log('Schema.index()', arguments)
+    mongoose.debug && console.log('Schema.index()', arguments)
     return this
   }
 
   add (obj, prefix) {
-    this.debug && console.log('Schema.add()', arguments)
+    mongoose.debug && console.log('Schema.add()', arguments)
     Object.assign(this.fields, SchemaUtil.optimizeObject(obj))
     return this
   }
 
   eachPath (fn) {
-    this.debug && console.log('Schema.eachPath()', arguments)
+    mongoose.debug && console.log('Schema.eachPath()', arguments)
     Object.keys(this.fields).forEach(key => fn(key, this.fields[key]))
     return this
   }

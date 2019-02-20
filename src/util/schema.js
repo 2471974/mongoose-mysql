@@ -4,7 +4,7 @@ export default {
   glueTable: '-',
   glueIndex: '.',
   table() {
-    return Array.prototype.join.call(arguments, this.glueTable)
+    return Array.prototype.join.call(arguments, this.glueTable).toLowerCase()
   },
   index() {
     let args = Array.prototype.filter.call(arguments, item => {
@@ -199,7 +199,7 @@ export default {
    */
   isTypeObject (fields) {
     const keywords = [
-      'type', 'unique', 'required', 'ref', 'id', '_id', 'default', 'set', 'enum', 'formatter'
+      'type', 'unique', 'required', 'ref', 'id', '_id', 'default', 'dafult', 'set', 'enum', 'formatter', 'min', 'max'
     ]
     for (let field in fields) {
       if (keywords.indexOf(field) === -1) return false

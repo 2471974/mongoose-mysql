@@ -14,6 +14,7 @@ class Mongoose {
     this.Error = Error
     this.connection = new Connection()
     this.Types = Schema.Types
+    this.debug = true
   }
 
   connect (config) {
