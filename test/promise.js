@@ -1,26 +1,19 @@
+"use strict";
 
-async function fn() {
-	return new Promise((r, d) => {
-		setTimeout(() => {
-			console.log('12214')
-			r(2222)
-		}, 20)
-	}).then(r => {
-		console.log(r)
-		return Promise.reject(44444)
-	}).then(r => {
-		console.log(r)
-		return Promise.resolve(555555555)
-	}).catch(e => {
-		console.log(e)
-		return Promise.resolve(33333333)
-	}).then(r => {
-		console.log(r)
-		return Promise.resolve(0000)
-	})
-}
-
-(async function () {
-	let r = await fn()
-	console.log(r)
-})()
+let obj = new Proxy({a: 124}, {
+	get (target, name) {
+		console.log('get', target, name)
+		return target[name]
+	},
+	set (obj, prop, value) {
+		console.log('set', obj, prop, value)
+		obj[prop] = value
+		return true
+	}
+})
+console.log(obj.a)
+console.log(obj.b)
+obj.a = 2222222
+console.log(obj.a)
+obj.c = 66666666666
+console.log(obj.c)
