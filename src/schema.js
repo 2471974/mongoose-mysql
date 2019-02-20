@@ -5,6 +5,37 @@ class Schema {
   constructor (fields, options) {
     this.fields = SchemaUtil.optimizeObject(fields)
     this.options = options || {}
+    this.plugins = []
+    this.debug = true
+  }
+
+  static (name, fn) {
+    this.debug && console.log('Schema.static()', arguments)
+    Schema[name] = fn
+    return this
+  }
+
+  method (name, fn) {
+    this.debug && console.log('Schema.method()', arguments)
+    this[name] = fn
+    return this
+  }
+
+  index (options) {
+    this.debug && console.log('Schema.index()', arguments)
+    return this
+  }
+
+  add (obj, prefix) {
+    this.debug && console.log('Schema.add()', arguments)
+    Object.assign(this.fields, SchemaUtil.optimizeObject(obj))
+    return this
+  }
+
+  eachPath (fn) {
+    this.debug && console.log('Schema.eachPath()', arguments)
+    Object.keys(this.fields).forEach(key => fn(key, this.fields[key]))
+    return this
   }
 
   get methods() {
@@ -12,6 +43,7 @@ class Schema {
   }
 
   set methods(data) {
+    console.log('methods----------', data)
   }
 
   get statics() {
@@ -19,10 +51,24 @@ class Schema {
   }
 
   set statics(data) {
+    console.log('statics------------', data)
   }
 
-  plugin (options) {
-
+  plugin (fn, opts) {
+    if (typeof fn !== 'function') {
+      throw new Error('First param to `schema.plugin()` must be a function, ' +
+        'got "' + (typeof fn) + '"');
+    }
+    if (opts && opts.deduplicate) {
+      for (let i = 0; i < this.plugins.length; ++i) {
+        if (this.plugins[i].fn === fn) {
+          return this;
+        }
+      }
+    }
+    this.plugins.push({ fn: fn, opts: opts });
+    fn(this, opts);
+    return this;
   }
 
   pre (action, callback) {
