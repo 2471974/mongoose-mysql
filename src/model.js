@@ -17,7 +17,10 @@ class Model extends Document {
   }
 
   static new (doc) {
-    return new (this.model())(doc)
+    let c = class extends this.model() {}
+    Object.assign(c, c.schema().statisc)
+    Object.assign(c.prototype, c.schema().methods)
+    return new c(doc)
   }
 
   static find (conditions, projection, options, callback) {

@@ -7,30 +7,19 @@ class Schema {
     this.fields = SchemaUtil.optimizeObject(fields)
     this.options = options || {}
     this.plugins = []
-    let _this = this
-    this.methods = new Proxy({}, {
-      set (obj, prop, value) {
-        mongoose.debug && console.log('Schema.methods.set()', arguments)
-        return _this.method(prop, value)
-      }
-    })
-    this.statics = new Proxy({}, {
-      set (obj, prop, value) {
-        mongoose.debug && console.log('Schema.statics.set()', arguments)
-        return _this.static(prop, value)
-      }
-    })
+    this.methods = {}
+    this.statics = {}
   }
 
   static (name, fn) {
     mongoose.debug && console.log('Schema.static()', arguments)
-    Schema[name] = fn
+    Object.assign(this.statics, {[name]: fn})
     return this
   }
 
   method (name, fn) {
     mongoose.debug && console.log('Schema.method()', arguments)
-    this[name] = fn
+    Object.assign(this.methods, {[name]: fn})
     return this
   }
 
