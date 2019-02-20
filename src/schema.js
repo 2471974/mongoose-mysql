@@ -76,7 +76,7 @@ class VirtualType {
     this.getter = () => {
       return this[name]
     }
-    this.getter = (val) => {
+    this.setter = (val) => {
       this[name] = val
     }
   }
