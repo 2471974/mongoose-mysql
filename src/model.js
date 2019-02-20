@@ -63,7 +63,7 @@ class Model extends Document {
         if (options.upsert) { // 执行插入
           return this.save(doc, callback)
         } else { // 返回受影响条数
-          callback && callback(null, ids.length)
+          if (callback) return callback(null, ids.length)
           return mongoose.Promise.resolve(ids.length)
         }
       }
@@ -74,7 +74,7 @@ class Model extends Document {
           promise = promise.then(() => {this.save(Object.assign({_id: id}, doc))})
         })
         return promise.then(() => { // 返回插入记录行数
-          callback && callback(null, ids.length)
+          if (callback) return callback(null, ids.length)
           return mongoose.Promise.resolve(ids.length)
         })
       } else { // 局部更新模式
@@ -99,19 +99,19 @@ class Model extends Document {
       }).then(result => { // 提交事务
         return mongoose.connection.commit()
       }).catch(error => {
-        callback && callback(error)
+        if (callback) return callback(error)
         mongoose.connection.rollback() // 回滚事务
         return mongoose.Promise.reject(error)
       }).then(result => {
         if (options.new) {
           return this.findById(options.multi ? ids : ids.shift(), options.select, callback)
         } else {
-          callback && callback(null, ids.length)
+          if (callback) return callback(null, ids.length)
           return mongoose.Promise.resolve(ids.length)
         }
       })
     }).catch(error => {
-      callback && callback(error)
+      if (callback) return callback(error)
       return mongoose.Promise.reject(error)
     })
   }
@@ -119,12 +119,12 @@ class Model extends Document {
   static remove(condition, callback) {
     return this.query().where(condition).distinct('_id').exec().then(result => {
       if (result.length === 0) {
-        callback && callback(null, result.length)
+        if (callback) return callback(null, result.length)
         return mongoose.Promise.resolve(result.length)
       }
       return this.removeById(result, callback)
     }).catch(error => {
-      callback && callback(error)
+      if (callback) return callback(error)
       return mongoose.Promise.reject(error)
     })
   }
@@ -160,11 +160,11 @@ class Model extends Document {
         }).catch(error => reject(error))
       })
     }).catch(error => {
-      callback && callback(error)
+      if (callback) return callback(error)
       mongoose.connection.rollback() // 回滚事务
       return mongoose.Promise.reject(error)
     }).then(result => {
-      callback && callback(null, result.affectedRows)
+      if (callback) return callback(null, result.affectedRows)
       return mongoose.Promise.resolve(result.affectedRows)
     })
   }
@@ -297,10 +297,10 @@ class Model extends Document {
         if (doc !== null) data.push(this.new(doc))
       })
       if (!(id instanceof Array)) data = data.length > 0 ? data[0] : data
-      callback && callback(null, data)
+      if (callback) return callback(null, data)
       return mongoose.Promise.resolve(data)
     }).catch(error => {
-      callback && callback(error)
+      if (callback) return callback(error)
       return mongoose.Promise.reject(error)
     })
   }
@@ -328,7 +328,7 @@ class Model extends Document {
         }).catch(error => reject(error))
       })
     }).catch(error => {
-      callback && callback(error)
+      if (callback) return callback(error)
       mongoose.connection.rollback() // 回滚事务
       return mongoose.Promise.reject(error)
     })

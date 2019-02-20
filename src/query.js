@@ -86,7 +86,7 @@ class Query {
     let {where, data} = this.buildWhere(this.$query.where)
     where && sql.push(' where ', where)
     return mongoose.connection.query(sql.join(''), data).then(result => {
-      callback && callback(null, result[0].ct)
+      if (callback) return callback(null, result[0].ct)
       return mongoose.Promise.resolve(result)
     })
   }
@@ -175,7 +175,7 @@ class Query {
 
   mapField (field) {
     let mapping = this.mapping.mappings[field]
-    if (!mapping) throw field + ' can not be mapped'
+    if (!mapping) throw this.$model.name() + '.' + field + ' can not be mapped ' + JSON.stringify(this.$query)
     return ['`', mapping.table, '`.`', mapping.field, '`'].join('')
   }
 
@@ -206,14 +206,14 @@ class Query {
           return this.fillPopulate(result, this.$query.populate, callback)
         })
       }
-      callback && callback(null, result)
+      if (callback) return callback(null, result)
       return mongoose.Promise.resolve(result)
     })
   }
 
   async fillPopulate (data, populate, callback) {
     if (!populate || populate.length === 0) {
-      callback && callback(null, data)
+      if (callback) return callback(null, data)
       return mongoose.Promise.resolve(data)
     }
     let idMap = {} // 构造待查询映射
@@ -239,7 +239,7 @@ class Query {
         Object.assign(item, {[map.path]: map.data[item[index]]})
       }
     })
-    callback && callback(null, data)
+    if (callback) return callback(null, data)
     return mongoose.Promise.resolve(data)
   }
 

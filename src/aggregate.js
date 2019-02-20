@@ -218,7 +218,7 @@ class Aggregate {
       data = result.data
     })
     return mongoose.connection.query(sql, data).then(result => {
-      callback && callback(null, result)
+      if (callback) return callback(null, result)
       return mongoose.Promise.resolve(result)
     })
   }
