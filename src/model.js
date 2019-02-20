@@ -37,6 +37,18 @@ class Model extends Document {
     return callback ? query.exec(callback) : query
   }
 
+  static findOne (conditions, projection, options, callback) {
+    if (typeof projection === 'function') {
+      callback = projection
+      projection = options = null
+    } else if (typeof options === 'function') {
+      callback = options
+      options = null
+    }
+    options = Object.assign({}, options ? options : {}, {scalar: true})
+    return this.find(conditions, projection, options, callback)
+  }
+
   static query () {
     return new Query(this.model())
   }
