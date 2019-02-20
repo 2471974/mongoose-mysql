@@ -221,13 +221,14 @@ class Query {
   }
 
   async fillPopulate (data, populate, callback) {
-    if (!populate || populate.length === 0) {
+    let result = data instanceof Array ? data : [data]
+    if (!populate || populate.length === 0 || !data || result.length < 1) {
       if (callback) return callback(null, data)
       return mongoose.Promise.resolve(data)
     }
     let idMap = {} // 构造待查询映射
     populate.forEach(item => Object.assign(idMap, {[item.path]: Object.assign({}, item, {ids: [], data: {}})}))
-    data.forEach(item => { // 获取待查询主键
+    result.forEach(item => { // 获取待查询主键
       for (let index in idMap) {
         idMap[index].ids.push(item[index])
       }
@@ -242,14 +243,14 @@ class Query {
         map.data[item._id] = item
       })
     }
-    data.forEach(item => { // 填充记录
+    result.forEach(item => { // 填充记录
       for (let index in idMap) {
         let map = idMap[index]
         Object.assign(item, {[map.path]: map.data[item[index]]})
       }
     })
-    if (callback) return callback(null, data)
-    return mongoose.Promise.resolve(data)
+    if (callback) return callback(null, data instanceof Array ? result : result[0])
+    return mongoose.Promise.resolve(data instanceof Array ? result : result[0])
   }
 
   cursor () {

@@ -34,6 +34,7 @@ class Model extends Document {
     let query = this.query()
     conditions && query.where(conditions)
     projection && query.select(projection)
+    options && query.options(options)
     return callback ? query.exec(callback) : query
   }
 
@@ -257,7 +258,7 @@ class Model extends Document {
     }
     if (Object.prototype.toString.call(id) === '[object Object]') id = id._id
     let ids = id instanceof Array ? id : [id]
-    if (ids.length < 1) {
+    if (!id || ids.length < 1) {
       return mongoose.Promise.resolve(id instanceof Array ? [] : null)
     }
     let mapping = this.mapping()
