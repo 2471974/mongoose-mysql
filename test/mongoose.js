@@ -6,9 +6,16 @@ var ObjectId = mongoose.Schema.Types.ObjectId;
 mongoose.connect(config.mongo, { useMongoClient: true });
 mongoose.Promise = global.Promise;
 
-var Cat = mongoose.model('Cat', { name: String, txt: { enum: ["Y", "N"], type: String } });
 
-var kitty = new Cat({ name: 'Zildjian', txt: 'ddddd' });
+var schema = new mongoose.Schema({ name: String, txt: { enum: ["Y", "N"], type: String } })
+schema.pre('save', function (next) {
+  console.log('ccccccccccccccccccccccc')
+  this.txt = 'cccccxxx'
+  next()
+})
+var Cat = mongoose.model('Cat', schema);
+
+var kitty = new Cat({ name: 'Zildjian', txt: 'Y' });
 
 kitty.save(function (err, doc) {
   if (err) {
