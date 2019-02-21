@@ -86,6 +86,10 @@ class Model extends Document {
   }
 
   static findOneAndUpdate (conditions, update, options, callback) {
+    if (typeof options === 'function') {
+      callback = options
+      options = null
+    }
     options = Object.assign({}, options || {}, {multi: false, new: true})
     return this.update(conditions, update, options, callback)
   }

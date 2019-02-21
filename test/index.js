@@ -130,5 +130,5 @@ co(function *(){
 	// 		console.log(doc._id)
 	// }
 })
-console.log(Cat.schema())
+Cat.findOneAndUpdate({f1: 'f1-test'}, {$set: {f5: 123}}, function () {console.log(arguments)})
 console.log('Bye Bye!');
