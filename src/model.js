@@ -242,7 +242,7 @@ class Model extends Document {
     let tables = []
     for (let field in fields) {
       let item = mapping.mappings[field]
-      if (!item) throw 'can not mapping field with name ' + field
+      if (!item) throw new Error('can not mapping field with name ' + field)
       tables[item.table] || (tables[item.table] = [])
       if (isExclude) {
         if (fields[field] === -1) tables[item.table].push(item.field)
@@ -398,10 +398,10 @@ class Model extends Document {
   doPre(method) {
     let pres = this.schema().pres
     if (typeof pres[method] === 'undefined') return
-    let index = 0
+    let index = 0, _this = this;
     (function next () {
       if (index >= pres[method].length) return
-      pres[method][index++].bind(this)(next)
+      pres[method][index++].bind(_this)(next)
     })(index)
   }
 

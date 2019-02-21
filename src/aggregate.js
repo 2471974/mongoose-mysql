@@ -41,7 +41,7 @@ class Aggregate {
           case '$MINUTE':value = 'MINUTE(`' + value + '`)';break;
           case '$SECOND':value = 'SECOND(`' + value + '`)';break;
           default:
-            throw 'unsupported convert function ' + fn + ' on field ' + index
+            throw new Error('unsupported convert function ' + fn + ' on field ' + index)
         }
       } else if (value === 1) {
         value = '`' + index + '`'
@@ -173,7 +173,7 @@ class Aggregate {
                 let result = this.buildCondition(value[0])
                 value = fnName + '(if(' + result.where + ', ' + value[1] + ', ' + value[2] + '))'
                 break
-              default:throw 'unsupported group sub function ' + fn + ' on field ' + key
+              default:throw new Error('unsupported group sub function ' + fn + ' on field ' + key)
             }
           } else if(value.toString().indexOf('$') === 0) { // 字段
             value = fnName + '(`' + value.substring(1) + '`)'
@@ -184,7 +184,7 @@ class Aggregate {
         case '$first': // MySQL always return the first record in grouping
           value = '`' + value.substring(1) + '`'
           break
-        default:throw 'unsupported group function ' + fn + ' on field ' + key
+        default:throw new Error('unsupported group function ' + fn + ' on field ' + key)
       }
       Object.assign(project, {[key]: value + " as '" + key.replace("'", "") + "'"})
     }

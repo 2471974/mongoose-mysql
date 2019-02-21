@@ -16,8 +16,8 @@ export default {
   },
   fieldsArrayType (fields) {
     if (fields instanceof Array) {
-      if (fields.length < 1) throw 'schema has empty array field'
-      if (fields.length > 1) throw 'schema has array field, but length greater than 1'
+      if (fields.length < 1) throw new Error('schema has empty array field')
+      if (fields.length > 1) throw new Error('schema has array field, but length greater than 1')
       fields = fields[0].type
     }
     return fields
@@ -39,7 +39,7 @@ export default {
         continue
       }
       let lparent = parent.toLowerCase(), lkey = mappings[key]
-      if (!lkey) throw 'can not mapping ' + key
+      if (!lkey) throw new Error('can not mapping ' + key)
       let table = result[lkey.table] || (result[lkey.table] = {fields:[], data: []})
       switch (lparent) {
         case '$inc':
@@ -54,7 +54,7 @@ export default {
           table.fields.push('`' + lkey.field + '`=null')
           break;
         default:
-          throw 'update operation ' + parent + ' is not supportted on field with name ' + key
+          throw new Error('update operation ' + parent + ' is not supportted on field with name ' + key)
       }
     }
     return result
@@ -261,7 +261,7 @@ export default {
           } else if (value.type.name && value.type.name === 'ObjectId') { // mongoose from plugin
             sql.push("`", field, "` int(11) NULL,")
           } else {
-            throw 'schema [' + tableName + '] has not supported field [' + field + '] with type [' + dataType + '] in ' + JSON.stringify(fields)
+            throw new Error('schema [' + tableName + '] has not supported field [' + field + '] with type [' + dataType + '] in ' + JSON.stringify(fields))
           }
       }
     }
