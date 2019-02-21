@@ -5,6 +5,7 @@ class Query {
   constructor (model, options) {
     this.$model = model
     this.$query = {
+      lean: true, // 是否返回Document对象
       count: null,
       distinct: null,
       select: null,
@@ -177,6 +178,11 @@ class Query {
     return this
   }
 
+  lean (lean) {
+    this.$query.lean = lean
+    return this
+  }
+
   exec (callback) {
     let sql = [], distinct = this.$query.distinct ? this.$query.distinct : '_id'
     let tables = Object.keys(this.mapping.tables)
@@ -212,7 +218,15 @@ class Query {
       !this.$options.multi && (result = result.shift())
       if (!this.$query.distinct) {
         return this.$model.findById(result, this.$query.select).then(result => {
-          return this.fillPopulate(result, this.$query.populate, callback)
+          return this.fillPopulate(result, this.$query.populate).then(result => {
+            debugger
+            if (this.$query.lean) {
+              result = (result instanceof Array) ? result.map(item => Object.assign({}, item)) : Object.assign({}, result)
+            }
+            return callback ? callback(null, result) : mongoose.Promise.resolve(result)
+          }).catch(error => {
+            return callback ? callback(error) : mongoose.Promise.reject(error)
+          })
         })
       }
       if (callback) return callback(null, result)
