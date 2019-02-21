@@ -10,7 +10,7 @@ class Schema {
     this.methods = {}
     this.statics = {}
     this.virtuals = {}
-    this.virtual('id').get(() => {return this._id})
+    this.virtual('id').get(function () {return this._id})
   }
 
   static (name, fn) {
@@ -69,14 +69,18 @@ class Schema {
 
 }
 
+/**
+ * getter和setter的值必须是动态的传统函数，以便通过apply、call、bind改变this指向。
+ * 箭头函数的this是静态的，默认绑定在此函数作用域中了，不可更改。
+ */
 class VirtualType {
   constructor (name, options) {
     this.name = name
     this.options = options
-    this.getter = () => {
+    this.getter = function () {
       return this[name]
     }
-    this.setter = (val) => {
+    this.setter = function (val) {
       this[name] = val
     }
   }

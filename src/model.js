@@ -24,6 +24,7 @@ class Model extends Document {
     let instance = new cls(doc)
     for (let name in schema.virtuals) {
       let vt = schema.virtuals[name]
+      // Proxy可以监听动态属性，暂不需要
       Object.defineProperty(instance, name, {
         get () {
           return vt.getter.bind(this)()
@@ -33,7 +34,6 @@ class Model extends Document {
         }
       })
     }
-    console.log(instance._id, instance.id)
     return instance
   }
 
