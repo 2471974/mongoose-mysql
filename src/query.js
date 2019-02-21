@@ -5,6 +5,7 @@ class Query {
   constructor (model, options) {
     this.$model = model
     this.$query = {
+      count: null,
       distinct: null,
       select: null,
       where: {},
@@ -13,7 +14,6 @@ class Query {
       limit: -1,
       populate: []
     }
-    this.count = null
     this.options(options)
     this.mapping = model.mapping()
   }
@@ -173,7 +173,7 @@ class Query {
   }
 
   count (name) {
-    this.count = name || 'ct'
+    this.$query.count = name || 'ct'
     return this
   }
 
@@ -181,8 +181,8 @@ class Query {
     let sql = [], distinct = this.$query.distinct ? this.$query.distinct : '_id'
     let tables = Object.keys(this.mapping.tables)
     let table = tables.shift()
-    if (this.count) {
-      sql.push('select count(distinct ',  this.mapField(distinct), ') as ', this.count, ' from ')
+    if (this.$query.count) {
+      sql.push('select count(distinct ',  this.mapField(distinct), ') as ', this.$query.count, ' from ')
     } else {
       sql.push('select distinct ',  this.mapField(distinct), ' from ')
     }
@@ -192,7 +192,7 @@ class Query {
     })
     let {where, data} = this.buildWhere(this.$query.where)
     where && sql.push(' where ', where)
-    if (this.count) {
+    if (this.$query.count) {
       return mongoose.connection.query(sql.join(''), data).then(result => {
         if (callback) return callback(null, result[0].ct)
         return mongoose.Promise.resolve(result)
