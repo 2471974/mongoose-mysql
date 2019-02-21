@@ -15,7 +15,7 @@ schema.pre('save', function (next) {
 })
 var Cat = mongoose.model('Cat', schema);
 
-var kitty = new Cat({ name: 'Zildjian', txt: 'Y' });
+var kitty = new Cat({ name: 'Zildjian', txt: 'ss' });
 
 kitty.save(function (err, doc) {
   if (err) {

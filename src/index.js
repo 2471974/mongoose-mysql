@@ -47,7 +47,6 @@ class Mongoose {
       static schema () {return schema}
       static collection () {return collection}
       static model () {return instance.$models[name]}
-      model () {return instance.$models[name]}
     }
     this.$collections[collection] = name
     this.$models[name] = model

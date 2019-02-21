@@ -42,25 +42,6 @@ class Model extends Document {
     return instance
   }
 
-  static pre(method, obj) {
-    if (typeof this.pres[method] === 'undefined') return
-    obj || (obj = this)
-    let index = 0
-    (function next () {
-      if (index >= this.pres[method].length) return
-      this.pres[method][index++].bind(obj)(next)
-    })(index)
-  }
-
-  static post(method, obj) {
-    // 暂不支持
-  }
-
-  static validate(doc, optional, callback) {
-    this.pre('validate', doc)
-
-  }
-
   static find (conditions, projection, options, callback) {
     if (typeof projection === 'function') {
       callback = projection
@@ -368,15 +349,6 @@ class Model extends Document {
     })
   }
 
-  static save (doc, callback) {
-    doc = this.new(doc)
-    return this.validate(doc, null, callback).then(doc => {
-      this.pre('save', doc)
-      if (typeof doc._id === 'undefined') return this.insert(doc, callback)
-      return this.update({_id: doc._id}, doc, {upsert: true, new: true}, callback)
-    })
-  }
-
   static insert (doc, callback) {
     let queries = SchemaUtil.insert(this.schema().fields, doc, this.collection())
     let query = queries.shift()
@@ -411,6 +383,85 @@ class Model extends Document {
 
   static ddl (withDrop) {
     return SchemaUtil.ddl(this.schema().fields, this.collection(), withDrop)
+  }
+
+  static save (doc, callback) {
+    doc = this.new(doc)
+    return doc.validate(null, callback).then(doc => {
+      doc.doPre('save') // update 和 insert方法内暂未进行校验
+      if (typeof doc._id === 'undefined') return this.insert(doc, callback)
+      return this.update({_id: doc._id}, doc, {upsert: true, new: true}, callback)
+    })
+  }
+
+  // ----------------实例方法开始的地方------------------------
+  doPre(method) {
+    let pres = this.schema().pres
+    if (typeof pres[method] === 'undefined') return
+    let index = 0
+    (function next () {
+      if (index >= pres[method].length) return
+      pres[method][index++].bind(this)(next)
+    })(index)
+  }
+
+  doPost(method, obj) {
+    // 暂不支持
+  }
+
+  deny (model, path, message, replaces) {
+    replaces.forEach(item => {message = message.replace(item.regexp, item.replacement)})
+    throw new Error('ValidationError: ' + model + ' validation failed: ' + path + ':', message)
+  }
+
+  async validate(optional, callback) {
+    this.doPre('validate')
+    let fields = this.schema().fields()
+    let deny = () => {
+
+    }
+    try {
+      for (let field in fields) {
+        let item = fields[field]
+        if (typeof item.required != 'undefined') {
+          if (!this[field]) this.deny(this.name(), field, mongoose.Error.messages.general.required, [
+            {regexp: '{PATH}', replacement: field},
+            {regexp: '{VALUE}', replacement: this[field]}
+          ])
+        }
+        if (typeof item.min != 'undefined') {
+          if (this[field] < item.min) this.deny(this.name(), field, mongoose.Error.messages.Number.min, [
+            {regexp: '{PATH}', replacement: field},
+            {regexp: '{VALUE}', replacement: this[field]},
+            {regexp: '{MIN}', replacement: item.min}
+          ])
+        }
+        if (typeof item.max != 'undefined') {
+          if (this[field] > item.max) this.deny(this.name(), field, mongoose.Error.messages.Number.max, [
+            {regexp: '{PATH}', replacement: field},
+            {regexp: '{VALUE}', replacement: this[field]},
+            {regexp: '{MAX}', replacement: item.max}
+          ])
+        }
+        if (typeof item.enum != 'undefined') {
+          if (item.enum.indexOf(this[field]) === -1) this.deny(this.name(), field, mongoose.Error.messages.String.enum, [
+            {regexp: '{PATH}', replacement: field},
+            {regexp: '{VALUE}', replacement: this[field]}
+          ])
+        }
+      }
+    } catch (e) {
+      if (callback) return callback(e)
+      throw e
+    }
+  }
+
+  save (callback) {
+    return this.model().save(this, callback)
+  }
+
+  remove (callback) {
+    return this.model().removeById(this._id)
   }
 
 }
