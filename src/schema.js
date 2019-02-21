@@ -1,6 +1,6 @@
 import SchemaUtil from './util/schema'
 import mongoose from './index'
-// TODO:
+
 class Schema {
 
   constructor (fields, options) {
@@ -11,6 +11,8 @@ class Schema {
     this.statics = {}
     this.virtuals = {}
     this.virtual('id').get(function () {return this._id})
+    this.pres = {} // 执行前回调：method => function (next) {next()}
+    this.posts = {} // 执行后回调：method => function (doc) {}
   }
 
   static (name, fn) {
@@ -59,8 +61,16 @@ class Schema {
     return this;
   }
 
-  pre (action, callback) {
+  pre (method, callback) {
+    mongoose.debug && console.log('Schema.pre()', arguments)
+    typeof this.pres[method] === 'undefined' && (this.pres[method] = [])
+    this.pres[method].push(callback)
+  }
 
+  post (method, callback) {
+    mongoose.debug && console.log('Schema.post()', arguments)
+    typeof this.posts[method] === 'undefined' && (this.posts[method] = [])
+    this.posts[method].push(callback)
   }
 
   virtual (name, options) {

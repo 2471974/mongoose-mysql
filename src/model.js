@@ -37,6 +37,25 @@ class Model extends Document {
     return instance
   }
 
+  static pre(method, obj) {
+    if (typeof this.pres[method] === 'undefined') return
+    obj || (obj = this)
+    let index = 0
+    (function next () {
+      if (index >= this.pres[method].length) return
+      this.pres[method][index++].bind(obj)(next)
+    })(index)
+  }
+
+  static post(method, obj) {
+    // 暂不支持
+  }
+
+  static validate(doc, optional, callback) {
+    this.pre('validate', doc)
+
+  }
+
   static find (conditions, projection, options, callback) {
     if (typeof projection === 'function') {
       callback = projection
@@ -101,7 +120,7 @@ class Model extends Document {
       if (!options.multi) ids = ids ? [ids] : [] // 单记录更新，转成数组处理
       if (ids.length === 0) { // 没有匹配记录
         if (options.upsert) { // 执行插入
-          return this.save(doc, callback)
+          return this.insert(doc, callback)
         } else { // 返回受影响条数
           if (callback) return callback(null, ids.length)
           return mongoose.Promise.resolve(ids.length)
@@ -110,7 +129,7 @@ class Model extends Document {
       if (options.overwrite) { // 覆盖模式
         let promise = this.removeById(ids) // 删除原记录
         ids.forEach(id => { // 插入新记录
-          promise = promise.then(() => {this.save(Object.assign({_id: id}, doc))})
+          promise = promise.then(() => {this.insert(Object.assign({_id: id}, doc))})
         })
         return promise.then(() => { // 返回插入记录行数
           if (callback) return callback(null, ids.length)
@@ -345,6 +364,11 @@ class Model extends Document {
   }
 
   static save (doc, callback) {
+    if (typeof doc._id === 'undefined') return this.insert(doc, callback)
+    return this.update({_id: doc._id}, doc, {upsert: true, new: true}, callback)
+  }
+
+  static insert (doc, callback) {
     let queries = SchemaUtil.insert(this.schema().fields, doc, this.collection())
     let query = queries.shift()
     let promise = mongoose.connection.beginTransaction().then(() => { // 启用事务
