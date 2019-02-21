@@ -258,7 +258,7 @@ export default {
             sql.push("`", field, "` datetime NULL,")
           } else if (value.type === Schema.Types.ObjectId) { // mysql
             sql.push("`", field, "` int(11) NULL,")
-          } else if (value.type.name && value.type.name === 'ObjectId') { // mongoose from plugin
+          } else if (value.type && value.type.name && value.type.name === 'ObjectId') { // mongoose from plugin
             sql.push("`", field, "` int(11) NULL,")
           } else {
             throw new Error('schema [' + tableName + '] has not supported field [' + field + '] with type [' + dataType + '] in ' + JSON.stringify(fields))
