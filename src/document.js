@@ -8,6 +8,7 @@ class Document {
     })
     for (let key in doc) {
       Object.defineProperty(this, key, {
+        configurable: true,
         enumerable: true,
         get () {
           return doc[key]

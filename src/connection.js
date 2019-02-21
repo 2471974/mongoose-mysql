@@ -68,6 +68,7 @@ class Connection {
           resolve(result)
         }
       })
+      mongoose.debug && console.log('Connection.query()', arguments)
       this.connection.query(...params)
     })
   }
