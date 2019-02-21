@@ -1,4 +1,5 @@
 import mongoose from './index'
+import SchemaUtil from './util/schema'
 
 class Query {
 
@@ -217,10 +218,9 @@ class Query {
       result = result.map(element => element[field])
       !this.$options.multi && (result = result.shift())
       if (!this.$query.distinct) {
-        return this.$model.findById(result, this.$query.select).then(result => {
+        return this.loadById(result, this.$query.select).then(result => {
           return this.fillPopulate(result, this.$query.populate).then(result => {
-            debugger
-            if (this.$query.lean) {
+            if (result && !this.$query.lean) {
               result = (result instanceof Array) ? result.map(item => Object.assign({}, item)) : Object.assign({}, result)
             }
             return callback ? callback(null, result) : mongoose.Promise.resolve(result)
@@ -235,14 +235,14 @@ class Query {
   }
 
   async fillPopulate (data, populate, callback) {
-    let result = data instanceof Array ? data : [data]
-    if (!populate || populate.length === 0 || !data || result.length < 1) {
+    let res = data instanceof Array ? data : [data]
+    if (!populate || populate.length === 0 || !data || res.length < 1) {
       if (callback) return callback(null, data)
       return mongoose.Promise.resolve(data)
     }
     let idMap = {} // 构造待查询映射
     populate.forEach(item => Object.assign(idMap, {[item.path]: Object.assign({}, item, {ids: [], data: {}})}))
-    result.forEach(item => { // 获取待查询主键
+    res.forEach(item => { // 获取待查询主键
       for (let index in idMap) {
         idMap[index].ids.push(item[index])
       }
@@ -252,24 +252,98 @@ class Query {
       let ids = Array.from(new Set(map.ids)).filter(item => {return item > 0})
       if (ids.length === 0) continue
       let model = mongoose.modelByName(map.model ? map.model : this.$model.schema().fields[index].ref)
-      let result  = await model.findById(ids, map.select)
+      let result = await model.query().loadById(ids, map.select)
       result.forEach(item => {
         map.data[item._id] = item
       })
     }
-    result.forEach(item => { // 填充记录
+    res.forEach(item => { // 填充记录
       for (let index in idMap) {
         let map = idMap[index]
         Object.assign(item, {[map.path]: map.data[item[index]]})
       }
     })
-    if (callback) return callback(null, data instanceof Array ? result : result[0])
-    return mongoose.Promise.resolve(data instanceof Array ? result : result[0])
+    if (callback) return callback(null, data instanceof Array ? res : res[0])
+    return mongoose.Promise.resolve(data instanceof Array ? res : res[0])
   }
 
   cursor () {
     return new Cursor(this)
   }
+
+  /**
+   * 根据一个或多个ID加载数据记录，不受查询参数影响
+   */
+  loadById(id, fields, callback) {
+    if (typeof fields === 'function') {
+      callback = fields
+      fields = null
+    }
+    if (Object.prototype.toString.call(id) === '[object Object]') id = id._id
+    let ids = id instanceof Array ? id : [id]
+    if (!id || ids.length < 1) {
+      return mongoose.Promise.resolve(id instanceof Array ? [] : null)
+    }
+    let mapping = this.$model.mapping()
+    let tableName = Object.keys(mapping.tables)[0] // 主表
+    let queries = [], tables = this.$model.tables(fields, mapping)
+    for (let table in tables) {
+      let sql = []
+      sql.push('select ', tables[table].columns.map(item => {return '`' + item + '`'}).join(', '))
+      sql.push(' from `', table, '` where ', table === tableName ? '`_id`' : '`autoId`')
+      sql.push(' in (', [].concat(ids).fill('?').join(', '), ')')
+      if (table !== tableName) sql.push(' order by `autoIndex` asc')
+      queries.push(mongoose.connection.query(sql.join(''), ids))
+    }
+    return mongoose.Promise.all(queries).then(results => {
+      let data = []
+      ids.forEach(id => {
+        let rindex = 0, doc = null
+        for (let index in tables) {
+          let table = tables[index], result = results[rindex++]
+          if (index === tableName) { // 主文档查询结果
+            result = result.filter(item => {return id === item._id})
+            if (result.length === 0) { // 主文档记录不存在
+              break
+            } else {
+              doc = Object.assign({}, result[0])
+              table.maps.forEach(map => doc = map(doc))
+              continue
+            }
+          } else {
+            result = result.filter(item => {return id === item.autoId})
+          }
+          if (result.length < 1) continue // 子文档不存在
+          result.forEach(item => {
+            item = Object.assign({}, item);
+            (function extend(data, keyIndex) {
+              let key = keyIndex.shift()
+              if (keyIndex.length > 0) {
+                if (keyIndex.length === 1 && table.isArray) {
+                  typeof data[key] === 'undefined' && (data[key] = [])
+                }
+                if (typeof data[key] !== 'undefined') {
+                  extend(data[key], keyIndex)
+                }
+              } else {
+                item._id = SchemaUtil.index(item.autoId, item.autoIndex)
+                table.maps.forEach(map => item = map(item))
+                data[key] = item
+              }
+            })(doc, item.autoIndex.split('.'))
+          })
+        }
+        if (doc !== null) data.push(this.$model.new(doc))
+      })
+      if (!(id instanceof Array)) data = data.length > 0 ? data[0] : data
+      if (callback) return callback(null, data)
+      return mongoose.Promise.resolve(data)
+    }).catch(error => {
+      if (callback) return callback(error)
+      return mongoose.Promise.reject(error)
+    })
+  }
+
 }
 
 class Cursor {
@@ -287,6 +361,7 @@ class Cursor {
     this.query.limit(1)
     return this.query.exec()
   }
+
 }
 
 export default Query
