@@ -390,7 +390,11 @@ class Model extends Document {
     return doc.validate(null, callback).then(doc => {
       doc.doPre('save') // update 和 insert方法内暂未进行校验
       if (typeof doc._id === 'undefined') return this.insert(doc, callback)
-      return this.update({_id: doc._id}, doc, {upsert: true, new: true}, callback)
+      let data = {}
+      for (let key in doc) {
+        if (doc.isModified(key)) Object.assign(data, {[key]: doc[key]})
+      }
+      return this.update({_id: doc._id}, data, null, callback)
     })
   }
 
