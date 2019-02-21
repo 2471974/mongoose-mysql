@@ -45,6 +45,7 @@ class Schema {
   }
 
   plugin (fn, opts) {
+    mongoose.debug && console.log('Schema.plugin()', arguments)
     if (typeof fn !== 'function') {
       throw new Error('First param to `schema.plugin()` must be a function, ' +
         'got "' + (typeof fn) + '"');

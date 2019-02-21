@@ -19,8 +19,6 @@ class Model extends Document {
   static new (doc) {
     let schema = this.model().schema()
     let cls = class extends this.model() {}
-    Object.assign(cls, schema.statisc)
-    Object.assign(cls.prototype, schema.methods)
     let instance = new cls(doc)
     let virtuals = Object.assign({}, schema.virtuals)
     for (let key in schema.fields) {

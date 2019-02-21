@@ -48,6 +48,8 @@ class Mongoose {
       static collection () {return collection}
       static model () {return instance.$models[name]}
     }
+    Object.assign(model, schema.statics)
+    Object.assign(model.prototype, schema.methods)
     this.$collections[collection] = name
     this.$models[name] = model
     return model
