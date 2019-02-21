@@ -125,9 +125,10 @@ let condition = {
 co(function *(){
 	// let result = yield Cat.query().where({_id: 6})
 	// console.log(result)
-	const cursor = Cat.find({_id: {'$in': [6, 9, 10]}}).limit(5).cursor();
-	for (let doc = yield cursor.next(); doc != null; doc = yield cursor.next()) {
-			console.log(doc._id)
-	}
+	// const cursor = Cat.find({_id: {'$in': [6, 9, 10]}}).limit(5).cursor();
+	// for (let doc = yield cursor.next(); doc != null; doc = yield cursor.next()) {
+	// 		console.log(doc._id)
+	// }
 })
+console.log(Cat.schema())
 console.log('Bye Bye!');
