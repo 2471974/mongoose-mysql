@@ -13,6 +13,7 @@ class Query {
       limit: -1,
       populate: []
     }
+    this.count = null
     this.options(options)
     this.mapping = model.mapping()
   }
@@ -79,23 +80,6 @@ class Query {
       return Object.prototype.toString.call(item) === '[object Object]' ? item : {path: item}
     })
     return this
-  }
-
-  count (callback) {
-    let sql = [], distinct = this.$query.distinct ? this.$query.distinct : '_id'
-    sql.push('select count(distinct ',  this.mapField(distinct), ') as ct from ')
-    let tables = Object.keys(this.mapping.tables)
-    let table = tables.shift()
-    sql.push('`', table, '`')
-    tables.forEach(element => {
-      sql.push(' left join `', element, '` on `', element, '`.`autoId` = `', table, '`.`_id`')
-    })
-    let {where, data} = this.buildWhere(this.$query.where)
-    where && sql.push(' where ', where)
-    return mongoose.connection.query(sql.join(''), data).then(result => {
-      if (callback) return callback(null, result[0].ct)
-      return mongoose.Promise.resolve(result)
-    })
   }
 
   buildWhere (condition, parent) {
@@ -188,17 +172,32 @@ class Query {
     return ['`', mapping.table, '`.`', mapping.field, '`'].join('')
   }
 
+  count (name) {
+    this.count = name || 'ct'
+    return this
+  }
+
   exec (callback) {
     let sql = [], distinct = this.$query.distinct ? this.$query.distinct : '_id'
-    sql.push('select distinct ',  this.mapField(distinct), ' from ')
     let tables = Object.keys(this.mapping.tables)
     let table = tables.shift()
+    if (this.count) {
+      sql.push('select count(distinct ',  this.mapField(distinct), ') as ', this.count, ' from ')
+    } else {
+      sql.push('select distinct ',  this.mapField(distinct), ' from ')
+    }
     sql.push('`', table, '`')
     tables.forEach(element => {
       sql.push(' left join `', element, '` on `', element, '`.`autoId` = `', table, '`.`_id`')
     })
     let {where, data} = this.buildWhere(this.$query.where)
     where && sql.push(' where ', where)
+    if (this.count) {
+      return mongoose.connection.query(sql.join(''), data).then(result => {
+        if (callback) return callback(null, result[0].ct)
+        return mongoose.Promise.resolve(result)
+      })
+    }
     let order = this.buildOrder(this.$query.order)
     order && sql.push(' order by ', order)
     if (this.$query.limit > 0) {
