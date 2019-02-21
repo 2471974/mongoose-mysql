@@ -416,10 +416,7 @@ class Model extends Document {
 
   async validate(optional, callback) {
     this.doPre('validate')
-    let fields = this.schema().fields()
-    let deny = () => {
-
-    }
+    let fields = this.schema().fields
     try {
       for (let field in fields) {
         let item = fields[field]
@@ -450,6 +447,7 @@ class Model extends Document {
           ])
         }
       }
+      return this
     } catch (e) {
       if (callback) return callback(e)
       throw e
