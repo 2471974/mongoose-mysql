@@ -69,8 +69,8 @@ class Model extends Document {
     return this.find(conditions, projection, options, callback)
   }
 
-  static query () {
-    return new Query(this.model())
+  static query (options) {
+    return new Query(this.model(), options)
   }
 
   static aggregate (options, callback) {

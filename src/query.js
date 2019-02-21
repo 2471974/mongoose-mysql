@@ -2,7 +2,7 @@ import mongoose from './index'
 
 class Query {
 
-  constructor (model) {
+  constructor (model, options) {
     this.$model = model
     this.$query = {
       distinct: null,
@@ -13,7 +13,7 @@ class Query {
       limit: -1,
       populate: []
     }
-    this.$options = this.options()
+    this.options(options)
     this.mapping = model.mapping()
   }
 
