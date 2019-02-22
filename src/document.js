@@ -7,29 +7,37 @@ class Document {
       enumerable: false, value: {}
     })
     for (let key in doc) {
-      let value = doc[key]
-      if(Object.prototype.toString.call(value) === '[object Object]') {
-        doc[key] = new Document(value)
-      } else if (value instanceof Array) {
-        doc[key] = new Document(value)
-      }
+      let value = this.convert(doc[key])
       Object.defineProperty(this, key, {
         configurable: true,
         enumerable: true,
         get () {
-          return doc[key]
+          return value
         },
         set (val) {
-          if(Object.prototype.toString.call(value) === '[object Object]') {
-            val = new Document(val)
-          } else if (value instanceof Array) {
-            val = new Document(val)
-          }
-          doc[key] = val
-          this.modified[key] = val
+          value = this.convert(val)
+          this.modified[key] = value
         }
       })
     }
+  }
+
+  convert (value) {
+    if(Object.prototype.toString.call(value) === '[object Object]') {
+      value = new Document(value)
+    } else if (value instanceof Array) {
+      value = value.map(item => {return this.convert(item)})
+    }
+    return value
+  }
+
+  revert (value) {
+    if(Object.prototype.toString.call(value) === '[object Object]') {
+      value = value.lean()
+    } else if (value instanceof Array) {
+      value = value.map(item => {return this.revert(item)})
+    }
+    return value
   }
 
   isModified (path) {
@@ -38,6 +46,14 @@ class Document {
     } else {
       return Object.keys(this.modified).length > 0
     }
+  }
+
+  lean () {
+    let data = {}
+    for (let key in this) {
+      data[key] = this.revert(this[key])
+    }
+    return data
   }
 }
 

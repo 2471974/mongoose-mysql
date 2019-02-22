@@ -129,8 +129,8 @@ co(function *(){
 	// for (let doc = yield cursor.next(); doc != null; doc = yield cursor.next()) {
 	// 		console.log(doc._id)
 	// }
-	let result = yield Cat.query({debug: true}).where({f3: {'$all': ['f3-11', 'f3-9']}})
-	console.log(result.length)
+	// let result = yield Cat.query({debug: true}).where({f3: {'$all': ['f3-11', 'f3-9']}})
+	// console.log(result.length)
 })
 // Cat.findOneAndUpdate({f1: 'f1-test'}, {$set: {f5: 123}}, function () {console.log(arguments)})
 // Cat.findOneAndUpdate({f1: 'f1-test'}, {$set: {'f10.f10c1': 'xxxx'}}, function () {console.log(arguments)})
@@ -138,5 +138,10 @@ co(function *(){
 	// let cc = yield Cat.findById(2)
 	// cc.f10.f10c1 = 'ffffsss'
 	// cc.save()
+	yield Cat.rebuildArray([1], {'$push': {f3: 'xxxxxx'}})
+	yield Cat.rebuildArray([1], {'$push': {f3: {'$each': ['xx', 'saf', '25253']}}})
+	yield Cat.rebuildArray([1], {'$push': {f11: {f11c1: 'f11c1-String', f11d: { f11d1: 'f11d1-sss'}}}})
+	let result = yield Cat.findById(1)
+	console.log(result.lean())
 })
 console.log('Bye Bye!');

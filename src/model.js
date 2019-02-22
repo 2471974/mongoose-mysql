@@ -99,6 +99,50 @@ class Model extends Document {
     return this.update(conditions, update, options, callback)
   }
 
+  /**
+   * 仅处理第一级节点，暂不支持子级操作
+   * 数据操作会破坏数组下标，可能会导致一些奇怪的问题
+   */
+  static async rebuildArray(ids, doc) {
+    let autoIndex = new Date().getTime()
+    for (let key in doc) {
+      let action = key.toLowerCase(), obj = doc[key], result = null
+      let field = Object.keys(obj).shift()
+      switch (action) {
+        case '$push':
+          let data = obj[field], queries = []
+          if (Object.keys(data).shift().toLowerCase() === '$each') { // 多值处理
+            data = data[Object.keys(data).shift()]
+          } else {
+            data = [data]
+          }
+          data.forEach(doc => {
+            SchemaUtil.insert(
+              this.$schema().fields[field].type, doc,
+              SchemaUtil.table(this.$collection(), field),
+              SchemaUtil.index(field, autoIndex++)
+            ).forEach(query => {
+              ids.forEach(id => {
+                queries.push({
+                  sql: query.sql, data: [id].concat(...query.data.slice(1))
+                })
+              })
+            })
+          })
+          await mongoose.Promise.all(queries.map(query => {
+            return mongoose.connection.query(query.sql, query.data)
+          }))
+          break
+        case '$pull': // 单值和条件
+          let where = this.query().buildWhere(obj[field], field)
+          console.log(where)
+          break;
+      }
+      if (result !== null) delete doc[key]
+    }
+    return doc
+  }
+
   static update (condition, doc, options, callback) {
     if (typeof options === 'function') {
       callback = options
@@ -130,38 +174,48 @@ class Model extends Document {
           if (callback) return callback(null, ids.length)
           return mongoose.Promise.resolve(ids.length)
         })
-      } else { // 局部更新模式
+      }
+      // 局部更新模式
+      return this.rebuildArray(ids, doc).then(doc => {
+        if (Object.keys(doc).length < 1) { // 无待更新数据
+          if (options.new) {
+            return this.findById(options.multi ? ids : ids.shift(), options.select, callback)
+          } else {
+            if (callback) return callback(null, ids.length)
+            return mongoose.Promise.resolve(ids.length)
+          }
+        }
         if (Object.keys(doc).filter(key => {return key.indexOf('$') === 0}).length === 0) {
           doc = {'$set': doc} // 增加更新标识
         }
-      }
-      let mapping = this.mapping()
-      let queries = [], tables = SchemaUtil.update(doc, mapping.mappings)
-      let tableName = Object.keys(mapping.tables).shift()
-      for (let index in mapping.tables) {
-        let table = tables[index]
-        if (!table) continue
-        let sql = []
-        sql.push('update `', index, '` set ', table.fields.join(', '))
-        sql.push(' where ', index === tableName ? '_id' : 'autoId')
-        sql.push(' in (', [].concat(ids).fill('?').join(', '), ')')
-        queries.push(mongoose.connection.query(sql.join(''), table.data.concat(ids)))
-      }
-      return mongoose.connection.beginTransaction().then(() => { // 启用事务
-        return mongoose.Promise.all(queries)
-      }).then(result => { // 提交事务
-        return mongoose.connection.commit()
-      }).catch(error => {
-        if (callback) return callback(error)
-        mongoose.connection.rollback() // 回滚事务
-        return mongoose.Promise.reject(error)
-      }).then(result => {
-        if (options.new) {
-          return this.findById(options.multi ? ids : ids.shift(), options.select, callback)
-        } else {
-          if (callback) return callback(null, ids.length)
-          return mongoose.Promise.resolve(ids.length)
+        let mapping = this.mapping()
+        let queries = [], tables = SchemaUtil.update(doc, mapping.mappings)
+        let tableName = Object.keys(mapping.tables).shift()
+        for (let index in mapping.tables) {
+          let table = tables[index]
+          if (!table) continue
+          let sql = []
+          sql.push('update `', index, '` set ', table.fields.join(', '))
+          sql.push(' where ', index === tableName ? '_id' : 'autoId')
+          sql.push(' in (', [].concat(ids).fill('?').join(', '), ')')
+          queries.push(mongoose.connection.query(sql.join(''), table.data.concat(ids)))
         }
+        return mongoose.connection.beginTransaction().then(() => { // 启用事务
+          return mongoose.Promise.all(queries)
+        }).then(result => { // 提交事务
+          return mongoose.connection.commit()
+        }).catch(error => {
+          if (callback) return callback(error)
+          mongoose.connection.rollback() // 回滚事务
+          return mongoose.Promise.reject(error)
+        }).then(result => {
+          if (options.new) {
+            return this.findById(options.multi ? ids : ids.shift(), options.select, callback)
+          } else {
+            if (callback) return callback(null, ids.length)
+            return mongoose.Promise.resolve(ids.length)
+          }
+        })
       })
     }).catch(error => {
       if (callback) return callback(error)

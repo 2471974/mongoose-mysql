@@ -224,7 +224,7 @@ class Query {
         return this.loadById(result, this.$query.select).then(result => {
           return this.fillPopulate(result, this.$query.populate).then(result => {
             if (result && !this.$query.lean) {
-              result = (result instanceof Array) ? result.map(item => Object.assign({}, item)) : Object.assign({}, result)
+              result = (result instanceof Array) ? result.map(item => {return item.lean()}) : result.lean()
             }
             return callback ? callback(null, result) : mongoose.Promise.resolve(result)
           }).catch(error => {
