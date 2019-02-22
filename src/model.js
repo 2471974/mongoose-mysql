@@ -134,9 +134,19 @@ class Model extends Document {
           }))
           break
         case '$pull': // 单值和条件
-          let where = this.query().buildWhere(obj[field], field)
-          console.log(where)
-          break;
+          let conditions = {}, tableName = SchemaUtil.table(this.$collection(), field)
+          if (Object.prototype.toString.call(obj[field]) === '[object Object]') {
+            for (let f in obj[field]) {
+              conditions[SchemaUtil.index(field, '$', f)] = obj[field][f]
+            }
+          } else {
+            conditions[field] = obj[field]
+          }
+          let query = this.query().buildWhere(conditions)
+          query.where = ['`autoId` in (', [].concat(ids).fill('?').join(', '), ') and (', query.where, ')'].join('')
+          query.sql = ['delete from `', tableName, '` where ', query.where].join('')
+          query.data = [].concat(ids, query.data)
+          return mongoose.connection.query(query.sql, query.data)
       }
       if (result !== null) delete doc[key]
     }
