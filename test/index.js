@@ -141,10 +141,12 @@ co(function *(){
 	// yield Cat.rebuildArray([1], {'$push': {f3: 'xxxxxx'}})
 	// yield Cat.rebuildArray([1], {'$push': {f3: {'$each': ['xx', 'saf', '25253']}}})
 	// yield Cat.rebuildArray([1], {'$push': {f11: {f11c1: 'f11c1-String', f11d: { f11d1: 'f11d1-sss'}}}})
-	yield Cat.rebuildArray([1, 2], {'$pull': {f3: 'f3-2'}})
-	yield Cat.rebuildArray([1, 2], {'$pull': {f3: {'$in': ['saf', '25253']}}})
-	yield Cat.rebuildArray([1], {'$pull': {f11: {f11c1: 'f11c1-String'}}})
+	// yield Cat.rebuildArray([1, 2], {'$pull': {f3: 'f3-2'}})
+	// yield Cat.rebuildArray([1, 2], {'$pull': {f3: {'$in': ['saf', '25253']}}})
+	// yield Cat.rebuildArray([1], {'$pull': {f11: {f11c1: 'f11c1-String'}}})
 	let result = yield Cat.findById(1)
+	result.f3 = ['dd', 'ccc']
+	result = yield Cat.findByIdAndUpdate(1, result)
 	console.log(result.lean())
 })
 console.log('Bye Bye!');

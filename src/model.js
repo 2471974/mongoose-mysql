@@ -87,7 +87,23 @@ class Model extends Document {
   }
 
   static findByIdAndUpdate (id, update, options, callback) {
-    return this.findOneAndUpdate({_id: id}, update, options, callback)
+    if (Object.keys(update).filter(key => {return key.indexOf('$') === 0}).length === 0 && typeof update !== 'undefined') {
+      return this.query().loadById(id).then(doc => {
+        doc = (function walk(da, db) {
+          for (let key in db) {
+            let value = db[key]
+            if(Object.prototype.toString.call(value) === '[object Object]') {
+              value = walk(da[key], value)
+            }
+            da[key] = value
+          }
+          return da
+        })(doc, update)
+        return doc.save(callback)
+      })
+    } else {
+      return this.findOneAndUpdate({_id: id}, update, options, callback)
+    }
   }
 
   static findOneAndUpdate (conditions, update, options, callback) {
@@ -398,25 +414,45 @@ class Model extends Document {
     return SchemaUtil.ddl(this.$schema().fields, this.$collection(), withDrop)
   }
 
+  static async rebuildArrays(id, field, datas) {
+    if (!id) return null
+    let sql = ['delete from `', SchemaUtil.table(this.$collection(), field), '` where `autoId` = ?']
+    await mongoose.connection.query(sql.join(''), [id])
+    let doc = {[field]: datas}
+    let queries = SchemaUtil.insert(this.$schema().fields, doc, this.$collection())
+    queries.shift() // 剔除主表写入
+    queries.map(query => {
+      query.data[0] = id
+      return mongoose.connection.query(query.sql, query.data)
+    })
+    return mongoose.Promise.all(queries)
+  }
+
   static save (doc, callback) {
     doc = doc instanceof Document ? doc : this.new(doc)
     return doc.validate({default: typeof doc._id === 'undefined'}, callback).then(doc => {
       doc.doPre('save') // update 和 insert方法内暂未进行校验
       if (typeof doc._id === 'undefined') return this.insert(doc, callback)
-      let data = {};
+      let data = {}, promises = mongoose.Promise.resolve();
       (function walk (obj, prefix) {
         for (let key in obj) {
           let skey = SchemaUtil.index(prefix, key), value = obj[key]
           if(Object.prototype.toString.call(value) === '[object Object]') {
-            walk(value, key)
+            walk.bind(this)(value, key)
           } else if (value instanceof Array) {
-            throw new Error('Model.save():' + key, 'array save is not supportted, use update instead')
+            if (prefix) {
+              // console.log('Model.save():' + key, 'sub document's array save is not supportted')
+              continue
+            }
+            promises = promises.then(() => {return this.rebuildArrays(this._id, key, value)})
           } else {
             if (obj.isModified(key)) Object.assign(data, {[skey]: value})
           }
         }
-      })(doc)
-      return this.update({_id: doc._id}, data, {upsert: true, new: true}, callback)
+      }).bind(this)(doc)
+      return promises.then(() => {
+        return this.update({_id: doc._id}, data, {upsert: true, new: true}, callback)
+      })
     })
   }
 
