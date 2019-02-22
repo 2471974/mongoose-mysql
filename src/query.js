@@ -147,7 +147,7 @@ class Query {
         default:
           if (value instanceof RegExp) {
             where.push(this.mapField(key) + ' like ?')
-            data.push('%' + value.toString() + '%')
+            data.push('%' + value.toString().replace(/(^\/)|(\/$)/gm, '') + '%')
           } else {
             where.push(this.mapField(key) + ' = ?')
             data.push(value)
@@ -169,7 +169,7 @@ class Query {
   mapField (field) {
     let mapping = this.mapping.mappings[field]
     if (!mapping) {
-      throw new Error(this.$model.name() + '.' + field + ' can not be mapped ' + JSON.stringify(this.$query))
+      throw new Error(this.$model.$name() + '.' + field + ' can not be mapped ' + JSON.stringify(this.$query))
     }
     return ['`', mapping.table, '`.`', mapping.field, '`'].join('')
   }
@@ -202,7 +202,7 @@ class Query {
     if (this.$query.count) {
       return mongoose.connection.query(sql.join(''), data).then(result => {
         if (callback) return callback(null, result[0].ct)
-        return mongoose.Promise.resolve(result)
+        return mongoose.Promise.resolve(result[0].ct)
       })
     }
     let order = this.buildOrder(this.$query.order)
@@ -251,7 +251,7 @@ class Query {
       let map = idMap[index]
       let ids = Array.from(new Set(map.ids)).filter(item => {return item > 0})
       if (ids.length === 0) continue
-      let model = mongoose.modelByName(map.model ? map.model : this.$model.schema().fields[index].ref)
+      let model = mongoose.modelByName(map.model ? map.model : this.$model.$schema().fields[index].ref)
       let result = await model.query().loadById(ids, map.select)
       result.forEach(item => {
         map.data[item._id] = item

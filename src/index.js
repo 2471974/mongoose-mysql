@@ -39,14 +39,14 @@ class Mongoose {
     schema.options.collection || Object.assign(schema.options, {collection: name.toLowerCase() + 's'})
     let collection = schema.options.collection
     let model = class extends Model {
-      name () {return name}
-      schema () {return schema}
-      collection () {return collection}
-      model () {return instance.$models[name]}
-      static name () {return name}
-      static schema () {return schema}
-      static collection () {return collection}
-      static model () {return instance.$models[name]}
+      $name () {return name}
+      $schema () {return schema}
+      $collection () {return collection}
+      $model () {return instance.$models[name]}
+      static $name () {return name}
+      static $schema () {return schema}
+      static $collection () {return collection}
+      static $model () {return instance.$models[name]}
     }
     Object.assign(model, schema.statics)
     Object.assign(model.prototype, schema.methods)

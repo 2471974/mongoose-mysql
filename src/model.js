@@ -11,7 +11,7 @@ class Model extends Document {
 
   static mapping() {
     if (!this.$mapping) {
-      this.$mapping = SchemaUtil.mapping(this.schema().fields, this.collection())
+      this.$mapping = SchemaUtil.mapping(this.$schema().fields, this.$collection())
     }
     return this.$mapping
   }
@@ -24,8 +24,8 @@ class Model extends Document {
   }
 
   static new (doc) {
-    let schema = this.model().schema()
-    let cls = class extends this.model() {}
+    let schema = this.$model().$schema()
+    let cls = class extends this.$model() {}
     let instance = new cls(doc)
     let virtuals = Object.assign({}, schema.virtuals)
     for (let key in schema.fields) {
@@ -75,7 +75,7 @@ class Model extends Document {
   }
 
   static query (options) {
-    return new Query(this.model(), options)
+    return new Query(this.$model(), options)
   }
 
   static aggregate (options, callback) {
@@ -83,7 +83,7 @@ class Model extends Document {
       options = [].concat(arguments)
       callback = null
     }
-    return new Aggregate(options, this.model()).exec(callback)
+    return new Aggregate(options, this.$model()).exec(callback)
   }
 
   static findByIdAndUpdate (id, update, options, callback) {
@@ -294,7 +294,7 @@ class Model extends Document {
   }
 
   static insert (doc, callback) {
-    let queries = SchemaUtil.insert(this.schema().fields, doc, this.collection())
+    let queries = SchemaUtil.insert(this.$schema().fields, doc, this.$collection())
     let query = queries.shift()
     let promise = mongoose.connection.beginTransaction().then(() => { // 启用事务
       return mongoose.connection.query(query.sql, query.data) // 插入主文档
@@ -326,12 +326,12 @@ class Model extends Document {
   }
 
   static ddl (withDrop) {
-    return SchemaUtil.ddl(this.schema().fields, this.collection(), withDrop)
+    return SchemaUtil.ddl(this.$schema().fields, this.$collection(), withDrop)
   }
 
   static save (doc, callback) {
     doc = doc instanceof Document ? doc : this.new(doc)
-    return doc.validate(null, callback).then(doc => {
+    return doc.validate({default: typeof doc._id === 'undefined'}, callback).then(doc => {
       doc.doPre('save') // update 和 insert方法内暂未进行校验
       if (typeof doc._id === 'undefined') return this.insert(doc, callback)
       let data = {}
@@ -344,7 +344,7 @@ class Model extends Document {
 
   // ----------------实例方法开始的地方------------------------
   doPre(method) {
-    let pres = this.schema().pres
+    let pres = this.$schema().pres
     if (typeof pres[method] === 'undefined') return
     let index = 0, _this = this;
     (function next () {
@@ -362,34 +362,42 @@ class Model extends Document {
     throw new Error('ValidationError: ' + model + ' validation failed: ' + path + ':', message)
   }
 
-  async validate(optional, callback) {
+  async validate(options, callback) {
+    if (typeof options === 'function') {
+      callback = options;
+      options = null;
+    }
+    options = Object.assign({default: false}, options || {})
     this.doPre('validate')
-    let fields = this.schema().fields
+    let fields = this.$schema().fields
     try {
       for (let field in fields) {
         let item = fields[field]
+        if (options.default && typeof item.default != 'undefined' && typeof this[field] === 'undefined') {
+          this[field] = item.default
+        }
         if (typeof item.required != 'undefined') {
-          if (!this[field]) this.deny(this.name(), field, mongoose.Error.messages.general.required, [
+          if (!this[field]) this.deny(this.$name(), field, mongoose.Error.messages.general.required, [
             {regexp: '{PATH}', replacement: field},
             {regexp: '{VALUE}', replacement: this[field]}
           ])
         }
         if (typeof item.min != 'undefined') {
-          if (this[field] < item.min) this.deny(this.name(), field, mongoose.Error.messages.Number.min, [
+          if (this[field] < item.min) this.deny(this.$name(), field, mongoose.Error.messages.Number.min, [
             {regexp: '{PATH}', replacement: field},
             {regexp: '{VALUE}', replacement: this[field]},
             {regexp: '{MIN}', replacement: item.min}
           ])
         }
         if (typeof item.max != 'undefined') {
-          if (this[field] > item.max) this.deny(this.name(), field, mongoose.Error.messages.Number.max, [
+          if (this[field] > item.max) this.deny(this.$name(), field, mongoose.Error.messages.Number.max, [
             {regexp: '{PATH}', replacement: field},
             {regexp: '{VALUE}', replacement: this[field]},
             {regexp: '{MAX}', replacement: item.max}
           ])
         }
         if (typeof item.enum != 'undefined') {
-          if (item.enum.indexOf(this[field]) === -1) this.deny(this.name(), field, mongoose.Error.messages.String.enum, [
+          if (item.enum.indexOf(this[field]) === -1) this.deny(this.$name(), field, mongoose.Error.messages.String.enum, [
             {regexp: '{PATH}', replacement: field},
             {regexp: '{VALUE}', replacement: this[field]}
           ])
@@ -403,11 +411,11 @@ class Model extends Document {
   }
 
   save (callback) {
-    return this.model().save(this, callback)
+    return this.$model().save(this, callback)
   }
 
   remove (callback) {
-    return this.model().removeById(this._id)
+    return this.$model().removeById(this._id)
   }
 
 }

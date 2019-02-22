@@ -39,7 +39,10 @@ export default {
         continue
       }
       let lparent = parent.toLowerCase(), lkey = mappings[key]
-      if (!lkey) throw new Error('can not mapping ' + key)
+      if (!lkey) {
+        continue
+        // throw new Error('can not mapping ' + key)
+      }
       let table = result[lkey.table] || (result[lkey.table] = {fields:[], data: []})
       switch (lparent) {
         case '$inc':
