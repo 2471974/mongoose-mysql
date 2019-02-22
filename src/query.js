@@ -331,7 +331,11 @@ class Query {
               } else {
                 item._id = SchemaUtil.index(item.autoId, item.autoIndex)
                 table.maps.forEach(map => item = map(item))
-                data[key] = item
+                if (data instanceof Array) {
+                  data.push(item) // 这种方式可能导致autoIndex与数组下标不一致
+                } else {
+                  data[key] = item
+                }
               }
             })(doc, item.autoIndex.split('.'))
           })

@@ -134,15 +134,20 @@ class Model extends Document {
           }))
           break
         case '$pull': // 单值和条件
-          let conditions = {}, tableName = SchemaUtil.table(this.$collection(), field)
+          let conditions = {}, parent = null, tableName = SchemaUtil.table(this.$collection(), field)
           if (Object.prototype.toString.call(obj[field]) === '[object Object]') {
-            for (let f in obj[field]) {
-              conditions[SchemaUtil.index(field, '$', f)] = obj[field][f]
+            if (Object.keys(obj[field]).filter(key => {return key.indexOf('$') === 0}).length === 0) {
+              for (let f in obj[field]) { // 纯文档方式
+                conditions[SchemaUtil.index(field, '$', f)] = obj[field][f]
+              }
+            } else { // 含操作指令
+              conditions = obj[field]
+              parent = field
             }
           } else {
             conditions[field] = obj[field]
           }
-          let query = this.query().buildWhere(conditions)
+          let query = this.query().buildWhere(conditions, parent)
           query.where = ['`autoId` in (', [].concat(ids).fill('?').join(', '), ') and (', query.where, ')'].join('')
           query.sql = ['delete from `', tableName, '` where ', query.where].join('')
           query.data = [].concat(ids, query.data)
