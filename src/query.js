@@ -21,7 +21,7 @@ class Query {
   }
 
   options (opts) {
-    this.$options = Object.assign({multi: true}, opts || {})
+    this.$options = Object.assign({multi: true, debug: false}, opts || {})
     return this
   }
 
@@ -98,6 +98,7 @@ class Query {
       }
       let lkey = key.toLowerCase()
       switch (lkey) {
+        case '$all': // 数组匹配查询
         case '$in':
           where.push(this.mapField(parent) + ' in (' + [].concat(value).fill('?').join(', ') + ')')
           data.push(...value)
@@ -200,6 +201,7 @@ class Query {
     let {where, data} = this.buildWhere(this.$query.where)
     where && sql.push(' where ', where)
     if (this.$query.count) {
+      this.$options.debug && console.log(sql.join(''), data)
       return mongoose.connection.query(sql.join(''), data).then(result => {
         if (callback) return callback(null, result[0].ct)
         return mongoose.Promise.resolve(result[0].ct)
@@ -212,6 +214,7 @@ class Query {
       this.$query.skip > -1 && sql.push(this.$query.skip, ', ')
       sql.push(this.$query.limit)
     }
+    this.$options.debug && console.log(sql.join(''), data)
     return mongoose.connection.query(sql.join(''), data).then(result => {
       let distinct = this.$query.distinct ? this.$query.distinct : '_id'
       let field = this.mapping.mappings[distinct].field

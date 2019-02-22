@@ -129,12 +129,14 @@ co(function *(){
 	// for (let doc = yield cursor.next(); doc != null; doc = yield cursor.next()) {
 	// 		console.log(doc._id)
 	// }
+	let result = yield Cat.query({debug: true}).where({f3: {'$all': ['f3-11', 'f3-9']}})
+	console.log(result.length)
 })
 // Cat.findOneAndUpdate({f1: 'f1-test'}, {$set: {f5: 123}}, function () {console.log(arguments)})
 // Cat.findOneAndUpdate({f1: 'f1-test'}, {$set: {'f10.f10c1': 'xxxx'}}, function () {console.log(arguments)})
 co(function *(){
-	let cc = yield Cat.findById(2)
-	cc.f10.f10c1 = 'ffffsss'
-	cc.save()
+	// let cc = yield Cat.findById(2)
+	// cc.f10.f10c1 = 'ffffsss'
+	// cc.save()
 })
 console.log('Bye Bye!');

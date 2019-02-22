@@ -156,7 +156,7 @@ export default {
       }
     } else {
       columns.push('value')
-      Object.assign(mappings, {[autoIndex]: {table: tableName, field: 'value'}})
+      Object.assign(mappings, {[autoIndex.substr(0, autoIndex.length - 2)]: {table: tableName, field: 'value'}})
       maps.push((data) => {return data.value})
     }
     result.tables = Object.assign({[tableName]: {columns, maps, isArray}}, result.tables)
