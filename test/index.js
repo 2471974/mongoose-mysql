@@ -130,5 +130,11 @@ co(function *(){
 	// 		console.log(doc._id)
 	// }
 })
-Cat.findOneAndUpdate({f1: 'f1-test'}, {$set: {f5: 123}}, function () {console.log(arguments)})
+// Cat.findOneAndUpdate({f1: 'f1-test'}, {$set: {f5: 123}}, function () {console.log(arguments)})
+// Cat.findOneAndUpdate({f1: 'f1-test'}, {$set: {'f10.f10c1': 'xxxx'}}, function () {console.log(arguments)})
+co(function *(){
+	let cc = yield Cat.findById(2)
+	cc.f10.f10c1 = 'ffffsss'
+	cc.save()
+})
 console.log('Bye Bye!');

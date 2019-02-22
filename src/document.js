@@ -7,6 +7,12 @@ class Document {
       enumerable: false, value: {}
     })
     for (let key in doc) {
+      let value = doc[key]
+      if(Object.prototype.toString.call(value) === '[object Object]') {
+        doc[key] = new Document(value)
+      } else if (value instanceof Array) {
+        doc[key] = new Document(value)
+      }
       Object.defineProperty(this, key, {
         configurable: true,
         enumerable: true,
@@ -14,8 +20,13 @@ class Document {
           return doc[key]
         },
         set (val) {
-          this.modified[key] = val
+          if(Object.prototype.toString.call(value) === '[object Object]') {
+            val = new Document(val)
+          } else if (value instanceof Array) {
+            val = new Document(val)
+          }
           doc[key] = val
+          this.modified[key] = val
         }
       })
     }

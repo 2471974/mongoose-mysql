@@ -334,10 +334,19 @@ class Model extends Document {
     return doc.validate({default: typeof doc._id === 'undefined'}, callback).then(doc => {
       doc.doPre('save') // update 和 insert方法内暂未进行校验
       if (typeof doc._id === 'undefined') return this.insert(doc, callback)
-      let data = {}
-      for (let key in doc) {
-        if (doc.isModified(key)) Object.assign(data, {[key]: doc[key]})
-      }
+      let data = {};
+      (function walk (obj, prefix) {
+        for (let key in obj) {
+          let skey = SchemaUtil.index(prefix, key), value = obj[key]
+          if(Object.prototype.toString.call(value) === '[object Object]') {
+            walk(value, key)
+          } else if (value instanceof Array) {
+            throw new Error('Model.save():' + key, 'array save is not supportted, use update instead')
+          } else {
+            if (obj.isModified(key)) Object.assign(data, {[skey]: value})
+          }
+        }
+      })(doc)
       return this.update({_id: doc._id}, data, {upsert: true, new: true}, callback)
     })
   }
