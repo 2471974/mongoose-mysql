@@ -385,6 +385,12 @@ class Model extends Document {
     if (!id) return null
     let sql = ['delete from `', SchemaUtil.table(this.$collection(), field), '` where `autoId` = ?']
     await mongoose.connection.query(sql.join(''), [id])
+    let tables = this.mapping().tables
+    let tablePrefix = SchemaUtil.table(this.$collection(), field, '')
+    for (let table in tables) {
+      if (table.indexOf(tablePrefix) !== 0) continue
+      await mongoose.connection.query(['delete from `', table, '` where `autoId` = ?'].join(''), [id])
+    }
     let doc = {[field]: datas}
     let queries = SchemaUtil.insert(this.$schema().fields, doc, this.$collection())
     queries.shift() // 剔除主表写入
@@ -401,17 +407,18 @@ class Model extends Document {
       doc.doPre('save') // update 和 insert方法内暂未进行校验
       if (typeof doc._id === 'undefined') return this.insert(doc, callback)
       let data = {}, promises = mongoose.Promise.resolve();
+      let tables = this.mapping().tables;
       (function walk (obj, prefix) {
         for (let key in obj) {
-          let skey = SchemaUtil.index(prefix, key), value = obj[key]
+          let skey = SchemaUtil.index(prefix, key), value = obj[key], table = tables[SchemaUtil.table(this.$collection(), key)]
           if(Object.prototype.toString.call(value) === '[object Object]') {
             walk.bind(this)(value, key)
-          } else if (value instanceof Array) {
+          } else if (value instanceof Array && table && table.isArray) {
             if (prefix) {
               // console.log('Model.save():' + key, 'sub document's array save is not supportted')
               continue
             }
-            promises = promises.then(() => {return this.rebuildArrays(this._id, key, value)})
+            promises = promises.then(() => {return this.rebuildArrays(doc._id, key, value)})
           } else {
             if (obj.isModified(key)) Object.assign(data, {[skey]: value})
           }
@@ -455,7 +462,13 @@ class Model extends Document {
       for (let field in fields) {
         let item = fields[field]
         if (options.default && typeof item.default != 'undefined' && typeof this[field] === 'undefined') {
-          this[field] = item.default
+          if (item.default === Date.now) {
+            this[field] = new Date()
+          } else if (typeof item.default === 'function') {
+            this[field] = item.default()
+          } else {
+            this[field] = item.default
+          }
         }
         if (typeof item.required != 'undefined') {
           if (!this[field]) this.deny(this.$name(), field, mongoose.Error.messages.general.required, [

@@ -16,7 +16,7 @@ var CatSchema = new mongoose.Schema({
 		f4c1: String
 	}],
 	f5: Number,
-	f6: Date,
+	f6: {type: Date, default: Date.now},
 	f7: {type: [{type: String}], formatter: new Stringify()},
 	f8: {
 		id: false,
@@ -56,7 +56,7 @@ var kitty = new Cat({
 		f4c1: 'f4c1-2'
 	}],
 	f5: Math.random() * 100,
-	f6: new Date(),
+	// f6: new Date(),
 	f7: ['f7-1', 'f7-2'],
 	f8: {
 		f8c1: 'f8c1'
@@ -106,7 +106,7 @@ let condition = {
 // Cat.remove({'_id': {'$lte': 3}}, (error, result) => {
 // 	console.log(error, result)
 // })
-// Cat.update({_id: 99}, {'$inc': {f5: 1}}, {new: true, select: {f5: 1}}, (error, result) => {
+// Cat.update({_id: 7}, {'$inc': {f5: 1}}, {new: true, select: {f5: 1}}, (error, result) => {
 // 	console.log(error, result)
 // })
 // Cat.aggregate([{
@@ -144,9 +144,10 @@ co(function *(){
 	// yield Cat.rebuildArray([1, 2], {'$pull': {f3: 'f3-2'}})
 	// yield Cat.rebuildArray([1, 2], {'$pull': {f3: {'$in': ['saf', '25253']}}})
 	// yield Cat.rebuildArray([1], {'$pull': {f11: {f11c1: 'f11c1-String'}}})
-	let result = yield Cat.findById(1)
-	result.f3 = ['dd', 'ccc']
-	result = yield Cat.findByIdAndUpdate(1, result)
+	let result = yield Cat.findById(7)
+	result.f3 = ['ss', '333']
+	result.f7 = ['777', 'xxx']
+	result = yield Cat.findByIdAndUpdate(7, result)
 	console.log(result.lean())
 })
 console.log('Bye Bye!');
