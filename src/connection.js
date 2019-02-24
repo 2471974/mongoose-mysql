@@ -31,21 +31,14 @@ class Connection {
 
   open (config) {
     return new mongoose.Promise((resolve, reject) => {
-      this.connection = mysql.createConnection(config)
-      this.connection.connect(error => {
-        if (error) {
-          this.trigger('error', [error])
-          reject(error)
-        } else {
-          this.trigger('open', [])
-          resolve()
-        }
-      })
+      this.pool = mysql.createPool(config)
+      this.trigger('open', [])
+      resolve()
     })
   }
   close () {
     return new mongoose.Promise((resolve, reject) => {
-      this.connection.end(error => {
+      this.pool.end(error => {
         if (error) {
           this.trigger('error', [error])
           reject(error)
@@ -68,55 +61,19 @@ class Connection {
           resolve(result)
         }
       })
-      this.connection.query(...params)
+      this.pool.query(...params)
     })
   }
-  beginTransaction () {
-    if (!mongoose.withTransaction) return mongoose.Promise.resolve()
+  getConnection (callback) {
     return new mongoose.Promise((resolve, reject) => {
-      let params = Array.from(arguments)
-      params.push(error => {
+      this.pool.getConnection((error, result) => {
+        if (callback) return callback(error, result)
         if (error) {
-          this.trigger('error', [error])
           reject(error)
         } else {
-          this.trigger('beginTransaction', [])
-          resolve()
+          resolve(result)
         }
       })
-      this.connection.beginTransaction(...params)
-    })
-  }
-  commit () {
-    if (!mongoose.withTransaction) return mongoose.Promise.resolve()
-    return new mongoose.Promise((resolve, reject) => {
-      let params = Array.from(arguments)
-      params.push(error => {
-        if (error) {
-          this.trigger('error', [error])
-          reject(error)
-        } else {
-          this.trigger('commit', [])
-          resolve()
-        }
-      })
-      this.connection.commit(...params)
-    })
-  }
-  rollback () {
-    if (!mongoose.withTransaction) return mongoose.Promise.resolve()
-    return new mongoose.Promise((resolve, reject) => {
-      let params = Array.from(arguments)
-      params.push(error => {
-        if (error) {
-          this.trigger('error', [error])
-          reject(error)
-        } else {
-          this.trigger('rollback', [])
-          resolve()
-        }
-      })
-      this.connection.rollback(...params)
     })
   }
 }
