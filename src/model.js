@@ -123,6 +123,7 @@ class Model extends Document {
     let autoIndex = new Date().getTime()
     for (let key in doc) {
       let action = key.toLowerCase(), obj = doc[key], result = null
+      if (obj === null || typeof obj === 'undefined') continue
       let field = Object.keys(obj).shift()
       switch (action) {
         case '$push':
