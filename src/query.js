@@ -148,7 +148,7 @@ class Query {
         default:
           if (value instanceof RegExp) {
             where.push(this.mapField(key) + ' like ?')
-            data.push('%' + value.toString().replace(/(^\/)|(\/$)/gm, '') + '%')
+            data.push('%' + value.toString().replace(/(^\/)|(\/[a-zA-Z]*$)/gm, '') + '%')
           } else {
             where.push(this.mapField(key) + ' = ?')
             data.push(value)
