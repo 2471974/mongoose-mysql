@@ -3,6 +3,8 @@ import mongoose from './index'
 import Document from './document'
 import Query from './query'
 import Aggregate from './aggregate'
+import Schema from './schema'
+
 
 /**
  * 静态模型
@@ -16,6 +18,24 @@ class Model extends Document {
     return this.$mapping
   }
 
+  static distinct(field, conditions, callback) {
+    if (typeof field === 'function') {
+      callback = field
+      conditions = field = null
+    } else if (typeof conditions === 'function') {
+      callback = conditions
+      conditions = null
+    }
+    let query = this.query()
+    field && query.distinct(field)
+    conditions && query.where(conditions)
+    if (callback) {
+      return query.exec(callback)
+    } else {
+      return query
+    }
+  }
+
   static count (conditions, callback) {
     if (callback) {
       return this.query().where(conditions).count().exec(callback)
@@ -26,29 +46,20 @@ class Model extends Document {
   static new (doc) {
     let schema = this.$model().$schema()
     let cls = class extends this.$model() {}
-    let instance = new cls(doc)
     let virtuals = Object.assign({}, schema.virtuals)
     for (let key in schema.fields) {
       if (typeof schema.fields[key].set === 'undefined') continue
-      Object.assign(virtuals, {[key]: new VirtualType(key).set(schema.fields[key].set)})
+      Object.assign(virtuals, {[key]: new Schema.VirtualType(key).set(schema.fields[key].set)})
     }
-    for (let name in virtuals) {
-      let vt = virtuals[name]
-      // Proxy可以监听动态属性，暂不需要
-      Object.defineProperty(instance, name, {
-        get () {
-          return vt.getter.bind(this)()
-        },
-        set (val) {
-          return vt.setter.bind(this)(val)
-        }
-      })
-    }
+    let instance = new cls(doc, virtuals)
     return instance
   }
 
   static find (conditions, projection, options, callback) {
-    if (typeof projection === 'function') {
+    if (typeof conditions === 'function') {
+      callback = conditions
+      conditions = projection = options = null
+    } else if (typeof projection === 'function') {
       callback = projection
       projection = options = null
     } else if (typeof options === 'function') {
@@ -122,55 +133,60 @@ class Model extends Document {
   static async rebuildArray(ids, doc) {
     let autoIndex = new Date().getTime()
     for (let key in doc) {
-      let action = key.toLowerCase(), obj = doc[key], result = null
+      let action = key.toLowerCase(), obj = doc[key]
       if (obj === null || typeof obj === 'undefined') continue
-      let field = Object.keys(obj).shift()
       switch (action) {
         case '$push':
-          let data = obj[field], queries = []
-          if (Object.keys(data).shift().toLowerCase() === '$each') { // 多值处理
-            data = data[Object.keys(data).shift()]
-          } else {
-            data = [data]
-          }
-          data.forEach(doc => {
-            SchemaUtil.insert(
-              this.$schema().fields[field].type, doc,
-              SchemaUtil.table(this.$collection(), field),
-              SchemaUtil.index(field, autoIndex++)
-            ).forEach(query => {
-              ids.forEach(id => {
-                queries.push({
-                  sql: query.sql, data: [id].concat(...query.data.slice(1))
+          delete doc[key]
+          for (let field in obj) {
+            let data = obj[field], queries = []
+            if (Object.keys(data).shift().toLowerCase() === '$each') { // 多值处理
+              data = data[Object.keys(data).shift()]
+            } else {
+              data = [data]
+            }
+            data.forEach(doc => {
+              SchemaUtil.insert(
+                this.$schema().fields[field].type, doc,
+                SchemaUtil.table(this.$collection(), field),
+                SchemaUtil.index(field, autoIndex++)
+              ).forEach(query => {
+                ids.forEach(id => {
+                  queries.push({
+                    sql: query.sql, data: [id].concat(...query.data.slice(1))
+                  })
                 })
               })
             })
-          })
-          await mongoose.Promise.all(queries.map(query => {
-            return mongoose.connection.query(query.sql, query.data)
-          }))
+            await mongoose.Promise.all(queries.map(query => {
+              return mongoose.connection.query(query.sql, query.data)
+            }))
+          }
           break
         case '$pull': // 单值和条件
-          let conditions = {}, parent = null, tableName = SchemaUtil.table(this.$collection(), field)
-          if (Object.prototype.toString.call(obj[field]) === '[object Object]') {
-            if (Object.keys(obj[field]).filter(key => {return key.indexOf('$') === 0}).length === 0) {
-              for (let f in obj[field]) { // 纯文档方式
-                conditions[SchemaUtil.index(field, '$', f)] = obj[field][f]
+          delete doc[key]
+          for (let field in obj) {
+            let conditions = {}, parent = null, tableName = SchemaUtil.table(this.$collection(), field)
+            if (Object.prototype.toString.call(obj[field]) === '[object Object]') {
+              if (Object.keys(obj[field]).filter(key => {return key.indexOf('$') === 0}).length === 0) {
+                for (let f in obj[field]) { // 纯文档方式
+                  conditions[SchemaUtil.index(field, '$', f)] = obj[field][f]
+                }
+              } else { // 含操作指令
+                conditions = obj[field]
+                parent = field
               }
-            } else { // 含操作指令
-              conditions = obj[field]
-              parent = field
+            } else {
+              conditions[field] = obj[field]
             }
-          } else {
-            conditions[field] = obj[field]
+            let query = this.query().buildWhere(conditions, parent)
+            query.where = ['`autoId` in (', [].concat(ids).fill('?').join(', '), ') and (', query.where, ')'].join('')
+            query.sql = ['delete from `', tableName, '` where ', query.where].join('')
+            query.data = [].concat(ids, query.data)
+            await mongoose.connection.query(query.sql, query.data)
           }
-          let query = this.query().buildWhere(conditions, parent)
-          query.where = ['`autoId` in (', [].concat(ids).fill('?').join(', '), ') and (', query.where, ')'].join('')
-          query.sql = ['delete from `', tableName, '` where ', query.where].join('')
-          query.data = [].concat(ids, query.data)
-          return mongoose.connection.query(query.sql, query.data)
+          break
       }
-      if (result !== null) delete doc[key]
     }
     return doc
   }
@@ -226,11 +242,13 @@ class Model extends Document {
         for (let index in mapping.tables) {
           let table = tables[index]
           if (!table) continue
-          let sql = []
-          sql.push('update `', index, '` set ', table.fields.join(', '))
-          sql.push(' where ', index === tableName ? '_id' : 'autoId')
-          sql.push(' in (', [].concat(ids).fill('?').join(', '), ')')
-          queries.push(mongoose.connection.query(sql.join(''), table.data.concat(ids)))
+          ids.forEach(id => {
+            let sql = []
+            sql.push('insert into `', index, '` (', [index === tableName ? '_id' : 'autoId'].concat(table.ifields).join(', '), ')')
+            sql.push(' values (', [id].concat(table.idata).fill('?').join(', '), ')')
+            sql.push(' on duplicate key update ', table.fields.join(', '))
+            queries.push(mongoose.connection.query(sql.join(''), [id].concat(table.idata, table.data)))
+          })
         }
         return mongoose.Promise.all(queries).then(result => {
           if (options.new) {
@@ -310,7 +328,7 @@ class Model extends Document {
       for (let index in fields) {
         if (fields[index] !== -1) continue
         isExclude = true
-        break 
+        break
       }
     }
     if (Object.keys(fields).length === 0) return mapping.tables
@@ -510,7 +528,7 @@ class Model extends Document {
   }
 
   remove (callback) {
-    return this.$model().removeById(this._id)
+    return this.$model().removeById(this._id, callback)
   }
 
 }

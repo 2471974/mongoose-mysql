@@ -30,6 +30,8 @@ export default {
         let r = this.update(value, mappings, key)
         for (let index in r) {
           if (result[index]) {
+            result[index].ifields.push(...r[index].ifields)
+            result[index].idata.push(...r[index].idata)
             result[index].fields.push(...r[index].fields)
             result[index].data.push(...r[index].data)
           } else {
@@ -43,18 +45,29 @@ export default {
         continue
         // throw new Error('can not mapping ' + key)
       }
-      let table = result[lkey.table] || (result[lkey.table] = {fields:[], data: []})
+      let akey = key.split('.')
+      let table = result[lkey.table] || (result[lkey.table] = {
+        ifields: akey.length > 1 ? ['autoIndex'] : [],
+        idata: akey.length > 1 ? [akey.slice(0, akey.length - 1).join('.')] : [], fields:[], data: []
+      })
       switch (lparent) {
         case '$inc':
+          table.ifields.push('`' + lkey.field + '`')
+          table.idata.push(value)
           table.fields.push('`' + lkey.field + '`=`' + lkey.field + '` + ?')
           table.data.push(value)
           break;
         case '$set':
+          table.ifields.push('`' + lkey.field + '`')
+          table.idata.push(lkey.map ? lkey.map(value) : value)
           table.fields.push('`' + lkey.field + '`=?')
           table.data.push(lkey.map ? lkey.map(value) : value)
           break;
         case '$unset':
-          table.fields.push('`' + lkey.field + '`=null')
+          table.ifields.push('`' + lkey.field + '`')
+          table.idata.push(null)
+          table.fields.push('`' + lkey.field + '`=?')
+          table.data.push(null)
           break;
         default:
           throw new Error('update operation ' + parent + ' is not supportted on field with name ' + key)
@@ -92,7 +105,7 @@ export default {
         case '[object Object]':
           if (typeof value.formatter !== 'undefined' && value.formatter instanceof Schema.Formatter.Stringify) {
             columns.push(field)
-            values.push(JSON.stringify(dataValue))
+            values.push(JSON.stringify(dataValue) || '')
           } else {
             if (Object.prototype.toString.call(dataValue) !== dataType) break
             if (dataType === '[object Object]') {
@@ -106,7 +119,7 @@ export default {
           break;
         default:
           columns.push(field)
-          values.push(dataValue)
+          values.push(value.set ? value.set(dataValue) : dataValue)
       }
     }
     let sql = []
@@ -142,7 +155,7 @@ export default {
                 data[field] = JSON.parse(data[field])
                 return data
               })
-              Object.assign(mappings, {[this.index(autoIndex, field)]: {table: tableName, field, map: data => {return JSON.stringify(data)}}})
+              Object.assign(mappings, {[this.index(autoIndex, field)]: {table: tableName, field, map: data => {return JSON.stringify(data) || ''}}})
             } else {
               let r = this.mapping(value.type, this.table(tableName, field), dataType === '[object Object]' ? this.index(autoIndex, field) : this.index(autoIndex, field, '$'))
               Object.assign(result.tables, r.tables)
@@ -151,7 +164,7 @@ export default {
             break;
           default:
             columns.push(field)
-            Object.assign(mappings, {[this.index(autoIndex, field)]: {table: tableName, field}})
+            Object.assign(mappings, {[this.index(autoIndex, field)]: {table: tableName, field, map: value.set}})
         }
       }
     } else {
@@ -163,15 +176,26 @@ export default {
     result.mappings = Object.assign(mappings, result.mappings)
     return result
   },
+  optimizeFormat (obj) {
+    if (obj.type === Date) {
+      if (typeof obj.set === 'undefined') {
+        obj.set = function (val) {
+          if (val instanceof Date) return val
+          return new Date(val)
+        }
+      }
+    }
+    return obj
+  },
   optimizeType (fields) {
     let dataType = Object.prototype.toString.call(fields)
     switch (dataType) {
       case '[object Array]':
-        return {type: this.optimizeArray(fields)}
+        return this.optimizeFormat({type: this.optimizeArray(fields)})
       case '[object Object]':
         if (this.isTypeObject(fields)) {
           fields.type = this.optimizeType(fields.type).type
-          return fields
+          return this.optimizeFormat(fields)
         }
         fields = {type: this.optimizeObject(fields)}
         if (typeof fields.type.id !== 'undefined') {
@@ -182,16 +206,16 @@ export default {
           fields._id = fields.type._id.type
           delete fields.type._id
         }
-        return fields
+        return this.optimizeFormat(fields)
       default:
-        return {type: fields}
+        return this.optimizeFormat({type: fields})
     }
   },
   optimizeObject (fields) {
     for (let field in fields) {
       fields[field] = this.optimizeType(fields[field])
     }
-    
+
     return fields
   },
   optimizeArray (fields) {
@@ -237,6 +261,11 @@ export default {
         value: {type: fields}
       }
     }
+
+    if (data === null) {
+      return [];
+    }
+
     for (let field in fields) {
       let value = fields[field]
       let dataType = Object.prototype.toString.call(value.type)

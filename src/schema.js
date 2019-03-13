@@ -75,7 +75,7 @@ class Schema {
   }
 
   virtual (name, options) {
-    return this.virtuals[name] = new VirtualType(name, options)
+    return this.virtuals[name] = new Schema.VirtualType(name, options)
   }
 
 }
@@ -84,22 +84,22 @@ class Schema {
  * getter和setter的值必须是动态的传统函数，以便通过apply、call、bind改变this指向。
  * 箭头函数的this是静态的，默认绑定在此函数作用域中了，不可更改。
  */
-class VirtualType {
+Schema.VirtualType = class {
   constructor (name, options) {
     this.name = name
     this.options = options
-    this.getter = function () {
-      return this[name]
-    }
+    this.getter = null
     this.setter = function (val) {
       this[name] = val
     }
   }
   get (fn) {
     this.getter = fn
+    return this
   }
   set (fn) {
     this.setter = fn
+    return this
   }
 }
 
@@ -108,7 +108,13 @@ Schema.Types = class {
 }
 
 Schema.Types.ObjectId = class { // 替换主键类型
-  constructor () {}
+  constructor (id) {
+    Object.defineProperty(this, '_id', {
+      configurable: true,
+      writable: true,
+      value: id
+    })
+  }
 }
 
 Schema.Formatter = class {

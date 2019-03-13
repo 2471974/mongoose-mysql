@@ -4,6 +4,7 @@ import mongoose from './index'
 class Connection {
   constructor () {
     this.listeners = {} // 执行后回调：method => {'type': 'on|once', 'called': bool, callback: function () {}}
+    this.db = new DataBase()
   }
 
   on (action, callback) {
@@ -49,9 +50,28 @@ class Connection {
       })
     })
   }
-  query () {
+  query (sql, data) {
+    if (data && data instanceof Array) {
+      data = (function walk(data) {
+        for (let index in data) {
+          let value = data[index]
+          if(Object.prototype.toString.call(value) === '[object Object]') {
+            if (value instanceof mongoose.Schema.Types.ObjectId) {
+              value = value._id
+            } else {
+              value = walk(value)
+            }
+          } else if (value instanceof Array) {
+            value = walk(value)
+          }
+          data[index] = value
+        }
+        return data
+      })(data)
+    }
     return new mongoose.Promise((resolve, reject) => {
-      let params = Array.from(arguments)
+      let params = [sql]
+      data && params.push(data)
       params.push((error, result) => {
         if (error) {
           this.trigger('error', [error])
@@ -75,6 +95,16 @@ class Connection {
         }
       })
     })
+  }
+}
+
+class DataBase {
+  collection (name, callback) {
+    let error = typeof mongoose.$collections[name] === 'undefined'
+    !error && (error = typeof mongoose.$models[mongoose.$collections[name]] === 'undefined')
+    let collection = error ? null : mongoose.modelByCollection(name)
+    if (callback) return callback(error, collection)
+    return collection
   }
 }
 
